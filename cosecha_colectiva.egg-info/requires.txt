@@ -1,0 +1,6 @@
+datajoint
+pandas
+jupyterlab
+matplotlib
+requests
+pathlib

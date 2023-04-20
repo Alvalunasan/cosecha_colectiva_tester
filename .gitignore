@@ -1,0 +1,8 @@
+
+dj_local_conf.json
+
+logs/*.log
+
+*.DS_Store
+
+xls_grupos/Original_XLS/

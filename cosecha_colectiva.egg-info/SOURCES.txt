@@ -1,0 +1,10 @@
+setup.py
+cosecha_colectiva/__init__.py
+cosecha_colectiva/config.py
+cosecha_colectiva/miscelaneous.py
+cosecha_colectiva/test_cosecha_api.py
+cosecha_colectiva.egg-info/PKG-INFO
+cosecha_colectiva.egg-info/SOURCES.txt
+cosecha_colectiva.egg-info/dependency_links.txt
+cosecha_colectiva.egg-info/requires.txt
+cosecha_colectiva.egg-info/top_level.txt
