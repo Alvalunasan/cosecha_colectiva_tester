@@ -205,6 +205,12 @@ def get_ganancias_sesiones(sesiones_dict):
 
     return ganancias
 
+def get_interes_prestamo(sesiones_dict):
+
+    interes_prestamo = (cosecha_db.InteresPrestamo & sesiones_dict).fetch(as_dict=True)
+
+    return interes_prestamo
+
 def get_prestamos_sesiones(sesiones_dict):
     
     acuerdo_proj = cosecha_db.Acuerdos.proj(Acuerdos_id='Acuerdo_id', *config.columnas_acuerdos)

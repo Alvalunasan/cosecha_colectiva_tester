@@ -132,7 +132,7 @@ class CAF_API_group_creation_tester():
         user_header,_ = CAF_API_general.user_login(username, password)
         time.sleep(1)
         response = requests.request("POST", config.url_dict['url_socio_grupo'], headers=user_header, data=json.dumps(codigo_grupo_dict))
-        time.sleep(1)
+        time.sleep(5)
         if not response:
             logging.error('%s', response.text)
             raise Exception('No se pudo unir el usuario al grupo ')
@@ -196,22 +196,22 @@ class CAF_API_group_creation_tester():
         logging.info('Proceso creación grupo %s', xls_name)
 
         CAF_API_group_creation_tester.create_users(xls_name)
-        time.sleep(0.1)
+        time.sleep(8)
         admin_header,_ = CAF_API_general.login_first_user_excel(xls_name)
-        time.sleep(0.1)
+        time.sleep(8)
         id_grupo = CAF_API_group_creation_tester.create_group(xls_name, admin_header)
-        time.sleep(0.1)
+        time.sleep(8)
         CAF_API_group_creation_tester.add_xls_users_group(xls_name, id_grupo)
-        time.sleep(0.1)
+        time.sleep(8)
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
 
         id_sesion = qc.get_active_sesion(id_grupo)
 
-        time.sleep(0.1)
+        time.sleep(8)
         CAF_API_group_creation_tester.create_acuerdos(xls_name)
-        time.sleep(0.1)
+        time.sleep(8)
         CAF_API_group_creation_tester.acciones_iniciales(xls_name, id_grupo, id_sesion)
-        time.sleep(0.1)
+        time.sleep(8)
         CAF_API_sessions_tester.end_session(id_grupo, admin_header)
 
 
@@ -224,6 +224,8 @@ class CAF_API_sessions_tester():
 
         payload_session = CAF_API_sessions_tester.create_session_payload(id_grupo)
         url_crear_sesion = config.url_dict['url_crear_sesion'].format(id_grupo=id_grupo)
+
+        logging.info('url_crear_sesion %s payload %s', url_crear_sesion, payload_session)
         response = requests.request("POST", url_crear_sesion, headers=admin_header, data=json.dumps(payload_session))
 
         if not response:
@@ -236,6 +238,8 @@ class CAF_API_sessions_tester():
         logging.info('API CALL, Finalizar sesion %d', id_grupo)
 
         url_finalizar_sesion = config.url_dict['url_finalizar_sesion'].format(id_grupo=id_grupo)
+
+        logging.info('url_finalizar_sesion %s payload %s', url_finalizar_sesion, '{}')
         response = requests.request("POST", url_finalizar_sesion, headers=admin_header, data={})
 
         if not response:
@@ -274,6 +278,7 @@ class CAF_API_sessions_tester():
             logging.debug('Payload Compra acciones: %s', payload)
             logging.debug('url_compra_accion: %s', url_compra_accion)
 
+            logging.info('url_compra_accion %s payload %s', url_compra_accion, payload)
             response = requests.request("POST", url_compra_accion, headers=admin_header, data=json.dumps(payload))
 
             if not response:
@@ -298,6 +303,7 @@ class CAF_API_sessions_tester():
             logging.debug('Payload Compra acciones: %s', payload)
             logging.debug('url_compra_accion: %s', url_retiro_accion)
 
+            logging.info('url_retiro_accion %s payload %s', url_retiro_accion, payload)
             response = requests.request("POST", url_retiro_accion, headers=admin_header, data=json.dumps(payload))
 
             if not response:
@@ -336,6 +342,7 @@ class CAF_API_sessions_tester():
 
                 logging.debug('payload pagar multa %s', payload)
 
+                logging.info('url_pagar_multa %s payload %s', url_pagar_multa, payload)
                 response = requests.request("PATCH", url_pagar_multa, headers=admin_header, data=json.dumps(payload))
 
                 if not response:
@@ -364,6 +371,7 @@ class CAF_API_sessions_tester():
                 logging.debug('Payload Insertar Multa acciones: %s', payload)
                 logging.debug('url_crear_multa: %s', url_crear_multa)
 
+                logging.info('url_crear_multa %s payload %s', url_crear_multa, payload)
                 response = requests.request("POST", url_crear_multa, headers=admin_header, data=json.dumps(payload))
 
                 if not response:
@@ -407,6 +415,7 @@ class CAF_API_sessions_tester():
 
                 logging.debug('payload pagar presatmos %s', payload)
 
+                logging.info('url_pagar_prestamo %s payload %s', url_pagar_prestamo, payload)
                 response = requests.request("PATCH", url_pagar_prestamo, headers=admin_header, data=json.dumps(payload))
 
                 if not response:
@@ -464,6 +473,8 @@ class CAF_API_sessions_tester():
                         logging.debug('url generar prestamo %s', url_generar_prestamo)
                         logging.debug('payload generar/ampliar prestamo %s', payload)
 
+
+                        logging.info('url_generar_prestamo %s payload %s', url_generar_prestamo, payload)
                         response = requests.request("POST", url_generar_prestamo, headers=admin_header, data=json.dumps(payload))
 
                         if not response:

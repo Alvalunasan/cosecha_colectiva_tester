@@ -195,7 +195,7 @@ class CAF_DB_Monitor():
             else:
                 next_interes_prestamo_id = self.interes_prestamo['Interes_prestamo_id'].max() + 10
 
-            interes_prestamo_sesion = self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, ['Prestamo_id', 'Interes_generado', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()
+            interes_prestamo_sesion = self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, ['Prestamo_id', 'interes_futuro', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()
             interes_prestamo_sesion['Sesion_id'] = sesion_id
             interes_prestamo_sesion['Interes_prestamo_id'] = range(next_interes_prestamo_id, next_interes_prestamo_id + interes_prestamo_sesion.shape[0]*10,10)
             interes_prestamo_sesion['Tipo_interes'] = 0
@@ -204,7 +204,7 @@ class CAF_DB_Monitor():
             interes_prestamo_sesion.loc[(interes_prestamo_sesion['Sesiones_restantes'] < 0) & (interes_prestamo_sesion['Estatus_ampliacion'] == 1), 'Tipo_interes'] = 3
 
             interes_prestamo_sesion = interes_prestamo_sesion.drop(['Estatus_ampliacion', 'Sesiones_restantes'], axis=1)
-            interes_prestamo_sesion = interes_prestamo_sesion.rename(columns={'Interes_generado': "Monto_interes"})
+            interes_prestamo_sesion = interes_prestamo_sesion.rename(columns={'interes_futuro': "Monto_interes"})
             interes_prestamo_sesion = interes_prestamo_sesion[config.columnas_interes_prestamo.keys()]
 
             self.interes_prestamo = pd.concat([self.interes_prestamo, interes_prestamo_sesion])
@@ -564,6 +564,11 @@ class CAF_DB_Monitor():
 
         ganancias = pd.DataFrame(qc.get_ganancias_sesiones(sesiones))
         [status, dfs] = self.compara_dfs(ganancias, self.ganancias, 'ganancias')
+        if not status:
+            return [status, dfs]
+        
+        interes_prestamo = pd.DataFrame(qc.get_interes_prestamo(sesiones))
+        [status, dfs] = self.compara_dfs(interes_prestamo, self.interes_prestamo, 'interes_prestamos')
         if not status:
             return [status, dfs]
 
