@@ -523,7 +523,7 @@ class CAF_API_sessions_tester():
         dict_session = ms.read_transform_info_xls(xls_name, 1, dict_users, type_xls="NEW", hoja="EstadisticaInicial")
         logging.info(dict_session)
 
-        for idx_acuerdo in range(1,4,1):
+        for idx_acuerdo in range(1,5,1):
             CAF_API_group_creation_tester.create_acuerdos(xls_name, idx_acuerdos=idx_acuerdo)
             time.sleep(2)
 
@@ -559,7 +559,7 @@ class CAF_API_sessions_tester():
         #Pago prestamos
         CAF_API_sessions_tester.pagar_prestamos_multiples(dict_session['ABONO'],id_grupo, sesion_list, admin_header)
 
-        qc.abona_a_caja(13478, sesion_list[-1], overwrite=True)
+        qc.abona_a_caja(4, sesion_list[-1], overwrite=True)
 
         CAF_API_group_creation_tester.create_acuerdos(xls_name, idx_acuerdos=0)
 
