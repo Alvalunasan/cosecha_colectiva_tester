@@ -46,7 +46,7 @@ class CAF_API_general():
             raise Exception('No se pudo obtener grupo id del usuario ')
         
         dict_response = json.loads(response.text)
-        id_grupo = dict_response["data"][0]["Grupo_id"]
+        id_grupo = dict_response["data"][-1]["Grupo_id"]
 
         return id_grupo
     
@@ -97,9 +97,9 @@ class CAF_API_group_creation_tester():
             time.sleep(0.1) 
             response = requests.request("POST", config.url_dict['url_socio'], headers=config.default_headers, data=payload)
 
-            if not response:
-                logging.error('%s', response.text)
-                raise Exception('No se pudo crear el usuario ')
+            #if not response:
+            #    logging.error('%s', response.text)
+            #    raise Exception('No se pudo crear el usuario ')
 
     
     @staticmethod
@@ -479,9 +479,101 @@ class CAF_API_sessions_tester():
 
                         if not response:
                             logging.error('%s', response.text)
-                            raise Exception('No se pudo generat prestamo ')
+                            raise Exception('No se pudo generar prestamo ')
 
                         time.sleep(1)
+
+
+    @staticmethod
+    def cambiar_status_socio(df_status_socio, id_grupo, admin_header):
+
+        if df_status_socio.shape[0] > 0:
+
+            for socio in df_status_socio.index.to_list():
+
+                new_status = int(df_status_socio.loc[socio, 'STATUS_SOCIOS'][0])
+
+                if new_status == -1:
+                    new_status = 0
+
+                payload = {'Status': new_status}
+
+                url_status_socio = config.url_dict['url_status_socio'].format(id_grupo=id_grupo, id_socio=socio)
+                response = requests.request("POST", url_status_socio, headers=admin_header, data=json.dumps(payload))
+
+                if not response:
+                    logging.error('%s', response.text)
+                    raise Exception('No se pudo cambiar status socio')
+                
+                time.sleep(1)
+                
+
+    @staticmethod
+    def poner_corriente_grupo(xls_name):
+
+        #Crear sesion
+        id_grupo, admin_header = CAF_API_general.get_grupo_id_admin_header_xls(xls_name)
+        CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+
+        sesion_list = qc.get_all_sesiones_grupo(id_grupo)
+
+        # toma la info de la sesion del excel y lo "combina" con los id de usuarios
+        #dict_users = CAF_API_general.get_all_users_id(xls_name)
+        dict_users = qc.get_socios_grupo(id_grupo)
+        dict_session = ms.read_transform_info_xls(xls_name, 1, dict_users, type_xls="NEW", hoja="EstadisticaInicial")
+        logging.info(dict_session)
+
+        for idx_acuerdo in range(1,4,1):
+            CAF_API_group_creation_tester.create_acuerdos(xls_name, idx_acuerdos=idx_acuerdo)
+            time.sleep(2)
+
+        dict_acuerdos = qc.get_acuerdos_grupo(id_grupo)
+
+        print(dict_session)
+
+        qc.sobreescribe_acciones(dict_session["COMPRA_ACCIONES"], id_grupo, dict_acuerdos['Costo_acciones'])
+
+        qc.sobreescribe_caja_acciones_sesion(dict_session["COMPRA_ACCIONES"], sesion_list[-1], dict_acuerdos['Costo_acciones'])
+        qc.abona_a_caja(1000000, sesion_list[-1])
+
+        #Finalizar sesion
+        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+
+        time.sleep(2)
+
+        CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+
+        #Generacion de prestamos
+        CAF_API_sessions_tester.generar_prestamos_multiples(dict_session['PRÉSTAMO'], id_grupo, sesion_list, admin_header)
+
+        qc.set_acuerdos_interes_0(id_grupo)
+
+        #Finalizar sesion
+        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        time.sleep(2)
+
+        CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+
+        sesion_list = qc.get_all_sesiones_grupo(id_grupo)
+
+        #Pago prestamos
+        CAF_API_sessions_tester.pagar_prestamos_multiples(dict_session['ABONO'],id_grupo, sesion_list, admin_header)
+
+        qc.abona_a_caja(13478, sesion_list[-1], overwrite=True)
+
+        CAF_API_group_creation_tester.create_acuerdos(xls_name, idx_acuerdos=0)
+
+        #Finalizar sesion
+        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+
+        qc.sobreescribe_ganancias(dict_session["GANANCIAS"], sesion_list[-1])
+
+        dict_session = ms.read_transform_info_xls(xls_name, 4, dict_users, type_xls="NEW", hoja="EstadisticaInicial")
+
+        qc.overwrite_acuerdos_prestamos(dict_session['PRÉSTAMO'], id_grupo, sesion_list)
+
+
+
 
     @staticmethod
     def main_create_sesion(xls_name, session_num, type_xls='MAYRA'):
@@ -499,6 +591,8 @@ class CAF_API_sessions_tester():
         dict_users = qc.get_socios_grupo(id_grupo)
         dict_session = ms.read_transform_info_xls(xls_name, session_num, dict_users, type_xls=type_xls)
         logging.info(dict_session)
+
+        CAF_API_sessions_tester.cambiar_status_socio(dict_session["STATUS_SOCIOS"], id_grupo, admin_header)
 
         # Se crearon acuerdos
         if dict_session['NUEVOS_ACUERDOS'].shape[0] > 0:

@@ -53,7 +53,7 @@ class CAF_DB_Monitor():
             monto_calculo = monto_calculo - series_prestamo['Monto_pagado'] + series_prestamo['Interes_generado'] - series_prestamo['Interes_pagado']
 
         interes_futuro = monto_calculo*interes_final/100
-        
+
         return interes_futuro
 
 
@@ -83,7 +83,7 @@ class CAF_DB_Monitor():
             for new_col in config.columnas_multa_extra:
                 self.multas[new_col] = 0
 
-        self.prestamos = pd.DataFrame(qc.get_prestamos_sesiones(self.sesiones))
+        self.prestamos = qc.get_prestamos_sesiones(self.sesiones, self.id_grupo)
         if self.prestamos.shape[0] == 0:
             self.prestamos = pd.DataFrame(columns=config.columnas_prestamos_final)
         else:
@@ -177,6 +177,8 @@ class CAF_DB_Monitor():
             self.socios_acciones['Acciones'] = self.socios_acciones['Acciones'] + self.socios_acciones['Acciones_new']
             self.socios_acciones = self.socios_acciones.drop(['Acciones_new'], axis=1)
             self.socios_acciones = self.socios_acciones.reset_index()
+            self.socios_acciones = self.socios_acciones[config.columnas_socio_accion]
+            self.socios_acciones['Acciones'] = self.socios_acciones['Acciones'].astype(int)
 
             self.caja = self.caja + df_acciones['Acciones'].sum()
 
@@ -184,10 +186,10 @@ class CAF_DB_Monitor():
 
         if self.prestamos.shape[0] > 0:
 
-            self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'Interes_generado'] =\
-            self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'Interes_generado'] + self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'interes_futuro']
-            self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'Sesiones_restantes'] =\
-                + self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'Sesiones_restantes'] - 1
+            self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Interes_generado'] =\
+            self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Interes_generado'] + self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'interes_futuro']
+            self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Sesiones_restantes'] =\
+                + self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Sesiones_restantes'] - 1
             
 
             if self.interes_prestamo.shape[0] == 0:
@@ -195,7 +197,8 @@ class CAF_DB_Monitor():
             else:
                 next_interes_prestamo_id = self.interes_prestamo['Interes_prestamo_id'].max() + 10
 
-            interes_prestamo_sesion = self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, ['Prestamo_id', 'interes_futuro', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()
+            interes_prestamo_sesion = self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), ['Prestamo_id', 'interes_futuro', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()
+            interes_prestamo_sesion = interes_prestamo_sesion.sort_values(by=['Prestamo_id'], ascending=[False])
             interes_prestamo_sesion['Sesion_id'] = sesion_id
             interes_prestamo_sesion['Interes_prestamo_id'] = range(next_interes_prestamo_id, next_interes_prestamo_id + interes_prestamo_sesion.shape[0]*10,10)
             interes_prestamo_sesion['Tipo_interes'] = 0
@@ -383,6 +386,8 @@ class CAF_DB_Monitor():
         else:
             ultimo_prestamo = qc.get_next_autoincrement_table('prestamos')
 
+        status_socio  = self.socios_acciones.loc[self.socios_acciones['Socio_id'] == socio, 'Status'].values[0]
+
         dict_prestamo = {
             'Prestamo_id': ultimo_prestamo,
             'Acuerdos_id': self.acuerdos['Acuerdo_id'],
@@ -401,7 +406,8 @@ class CAF_DB_Monitor():
             'Ultimo_interes_pagado': 0,
             'debe_interes': 0,
             'sobrante_abono': 0,
-            'Ultimo_abono': 0
+            'Ultimo_abono': 0,
+            'Status_socio': status_socio
         }
 
         dict_acuerdos = self.acuerdos[config.columnas_acuerdos].to_dict()
@@ -436,7 +442,7 @@ class CAF_DB_Monitor():
 
                 last_socio = socio
                 
-                series_multa = self.crea_nueva_multa(monto_multa, socio, sesion_list[-1]['Sesion_id'], idx_multa_socio, self.id_grupo)
+                series_multa = self.crea_nueva_multa(monto_multa, socio, sesion_list[-1]['Sesion_id'], idx_multa_socio)
                 self.multas.loc[self.multas.shape[0]] = series_multa
 
                 idx_multa_socio += 1
@@ -483,7 +489,7 @@ class CAF_DB_Monitor():
 
         ganancias_totales_sesion = ganancias_prestamos + ganancias_multas
 
-        ganancias_sesion = self.socios_acciones[['Acciones', 'Socio_id']].copy()
+        ganancias_sesion = self.socios_acciones.loc[self.socios_acciones['Status'] == 1, ['Acciones', 'Socio_id']].copy()
         total_acciones = ganancias_sesion['Acciones'].sum()
         ganancias_sesion['Acciones'] = ganancias_sesion['Acciones']*ganancias_totales_sesion/total_acciones
         ganancias_sesion = ganancias_sesion.rename(columns={'Acciones': 'Monto_ganancia'})
@@ -531,6 +537,20 @@ class CAF_DB_Monitor():
 
             self.acuerdos = acuerdos_series
 
+    def cambia_status_socio(self, df_status_socio):
+
+        if df_status_socio.shape[0] > 0:
+
+            for socio in df_status_socio.index.to_list():
+
+                new_status = int(df_status_socio.loc[socio, 'STATUS_SOCIOS'][0])
+
+                if new_status == -1:
+                    new_status = 0
+                
+                self.socios_acciones.loc[self.socios_acciones['Socio_id'] == socio, 'Status'] = new_status
+                self.prestamos.loc[self.prestamos['Socio_id'] == socio, 'Status_socio'] = new_status
+
     def compara_db_monitor(self):
 
         sesiones = qc.get_sesiones_grupo(self.id_grupo)
@@ -544,11 +564,11 @@ class CAF_DB_Monitor():
             return [status, dfs]
         
         socios_acciones = pd.DataFrame(qc.get_socios_acciones_grupo(self.id_grupo))
-        [status, dfs] = self.compara_dfs(socios_acciones, self.socios_acciones, 'socios-acciones')
+        [status, dfs] = self.compara_dfs(socios_acciones[config.columnas_socio_accion], self.socios_acciones[config.columnas_socio_accion], 'socios-acciones')
         if not status:
             return [status, dfs]
         
-        prestamos = pd.DataFrame(qc.get_prestamos_sesiones(sesiones))
+        prestamos = qc.get_prestamos_sesiones(sesiones, self.id_grupo)
         if prestamos.shape[0] == 0:
             prestamos = pd.DataFrame(columns=config.columnas_prestamos)
         [status, dfs] = self.compara_dfs(prestamos[config.columnas_prestamos], self.prestamos[config.columnas_prestamos], 'prestamos')
@@ -568,7 +588,15 @@ class CAF_DB_Monitor():
             return [status, dfs]
         
         interes_prestamo = pd.DataFrame(qc.get_interes_prestamo(sesiones))
-        [status, dfs] = self.compara_dfs(interes_prestamo, self.interes_prestamo, 'interes_prestamos')
+        if interes_prestamo.shape[0] == 0:
+            interes_prestamo = pd.DataFrame(columns=config.columnas_interes_prestamo)
+        interes_prestamo = interes_prestamo.sort_values(by=['Prestamo_id', 'Sesion_id'])
+        interes_prestamo = interes_prestamo.reset_index(drop=True)
+        interes_prestamo_comp = self.interes_prestamo.sort_values(by=['Prestamo_id', 'Sesion_id'])
+        interes_prestamo_comp = interes_prestamo_comp.reset_index(drop=True)
+        [status, dfs] = self.compara_dfs(interes_prestamo[config.columnas_interes_prestamo_comp.keys()], 
+                                         interes_prestamo_comp[config.columnas_interes_prestamo_comp.keys()], 'interes_prestamos')
+        
         if not status:
             return [status, dfs]
 
@@ -616,9 +644,12 @@ class CAF_DB_Monitor():
 
         # self.acuerdos = pd.Series(qc.get_acuerdos_grupo(id_grupo))
         self.actualiza_sesiones()
-        self.crea_nuevos_acuerdos(dict_session['NUEVOS_ACUERDOS'], xls_name)
 
         self.actualiza_interes_prestamos(self.sesiones[-1]['Sesion_id'])
+
+        self.cambia_status_socio(dict_session['STATUS_SOCIOS'])
+
+        self.crea_nuevos_acuerdos(dict_session['NUEVOS_ACUERDOS'], xls_name)
 
         self.actualiza_multas(dict_session['MULTAS'], self.sesiones)
 

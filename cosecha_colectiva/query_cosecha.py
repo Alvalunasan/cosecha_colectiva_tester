@@ -18,6 +18,31 @@ def get_acuerdos_grupo(id_grupo):
 
     return dict_acuerdos[0]
 
+def get_all_acuerdos(id_grupo):
+
+    query = dict()
+    query['Grupo_id'] = id_grupo
+
+    df_acuerdos = pd.DataFrame((cosecha_db.Acuerdos & query).fetch(as_dict = True))
+
+    return df_acuerdos
+
+def set_acuerdos_interes_0(id_grupo):
+
+    query = dict()
+    query['Grupo_id'] = id_grupo
+    query['Status'] = 1
+
+    acuerdo_id = (cosecha_db.Acuerdos & query).fetch('KEY', as_dict = True)
+    acuerdo_id = acuerdo_id[0]['Acuerdo_id']
+
+    query2 = dict()
+    query2['Acuerdo_id'] = acuerdo_id
+    query2['Tasa_interes'] = 0
+
+    print(query2)
+
+    cosecha_db.Acuerdos().update1(query2)
 
 def write_first_acciones_socio(id_grupo, id_socio, acciones):
 
@@ -30,6 +55,48 @@ def write_first_acciones_socio(id_grupo, id_socio, acciones):
     id_grupo_socio['Acciones'] = acciones
 
     cosecha_db.GrupoSocio().update1(id_grupo_socio)
+
+def overwrite_ganancias_socio(id_socio, sesion_id, ganancias):
+
+    query = dict()
+    query['Sesion_id'] = sesion_id
+    query['Socio_id'] = id_socio
+
+    id_ganancia = (cosecha_db.Ganancias & query).fetch('KEY', as_dict = True)
+    id_ganancia = id_ganancia[0]
+    id_ganancia['Monto_ganancia'] = ganancias
+
+    cosecha_db.Ganancias().update1(id_ganancia)
+
+def overwrite_acuerdos_prestamos(df_idx_acuerdos, grupo_id, sesion_list):
+
+    if df_idx_acuerdos.shape[0] > 0:
+        prestamo_id_df = get_prestamo_n_socios(list(df_idx_acuerdos.index.to_list()), sesion_list)
+
+        df_idx_acuerdos = pd.merge(df_idx_acuerdos, prestamo_id_df, how='inner', left_index=True, right_index=True)
+
+        print(df_idx_acuerdos)
+
+        #df_idx_acuerdos = df_idx_acuerdos.reset_index()
+
+        df_acuerdos  = get_all_acuerdos(grupo_id)
+
+        print(df_acuerdos)
+
+        for socio in df_idx_acuerdos.index.to_list():
+                
+            for idx_prestamo,idx_acuerdo in enumerate(df_idx_acuerdos.loc[socio,'PRÉSTAMO']):
+
+                query_prestamo = dict()
+                query_prestamo["Prestamo_id"] = df_idx_acuerdos.loc[socio,'Prestamo_id'][idx_prestamo]
+                this_acuerdo = df_acuerdos.loc[idx_acuerdo-1, 'Acuerdo_id']
+                query_prestamo["Acuerdos_id"] = this_acuerdo
+
+                print(query_prestamo)
+
+                cosecha_db.Prestamos().update1(query_prestamo)
+                time.sleep(1)
+
 
 def write_first_caja(id_sesion, caja):
 
@@ -102,7 +169,7 @@ def get_socios_grupo(id_grupo, as_orderded_dict=True):
 
 def get_socios_acciones_grupo(id_grupo):
 
-    socio_id_list = (cosecha_db.GrupoSocio & "Grupo_id ="+str(id_grupo)).fetch('Socio_id', 'Tipo_socio', 'Acciones', order_by='Socio_id', as_dict=True)
+    socio_id_list = (cosecha_db.GrupoSocio & "Grupo_id ="+str(id_grupo)).fetch(*config.columnas_socio_accion, order_by='Socio_id', as_dict=True)
 
     return socio_id_list
 
@@ -180,6 +247,7 @@ def restart_grupo_acciones(id_grupo):
     for socio in grupo_socios:
 
         socio['Acciones'] = minimo_aportacion
+        socio['Status'] = 1
         cosecha_db.GrupoSocio().update1(socio)
 
 def get_sesiones_grupo(id_grupo):
@@ -207,15 +275,18 @@ def get_ganancias_sesiones(sesiones_dict):
 
 def get_interes_prestamo(sesiones_dict):
 
-    interes_prestamo = (cosecha_db.InteresPrestamo & sesiones_dict).fetch(as_dict=True)
+    interes_prestamo = (cosecha_db.InteresPrestamo & sesiones_dict).fetch(*config.columnas_interes_prestamo.keys(), as_dict=True)
 
     return interes_prestamo
 
-def get_prestamos_sesiones(sesiones_dict):
+def get_prestamos_sesiones(sesiones_dict, id_grupo):
     
     acuerdo_proj = cosecha_db.Acuerdos.proj(Acuerdos_id='Acuerdo_id', *config.columnas_acuerdos)
+    prestamos = pd.DataFrame((cosecha_db.Prestamos * acuerdo_proj & sesiones_dict).fetch(*config.columnas_prestamos, as_dict=True))
 
-    prestamos = (cosecha_db.Prestamos * acuerdo_proj & sesiones_dict).fetch(*config.columnas_prestamos, as_dict=True)
+    if prestamos.shape[0] > 0:
+        socios_df  = pd.DataFrame((cosecha_db.GrupoSocio.proj('Socio_id', Status='Status_socio') & ("Grupo_id="+str(id_grupo))).fetch(as_dict=True))
+        prestamos = pd.merge(prestamos, socios_df, how='inner', on='Socio_id')
 
     return prestamos
 
@@ -243,6 +314,68 @@ def get_next_autoincrement_table(table_name):
     query= 'SELECT AUTO_INCREMENT FROM information_schema.TABLES where TABLE_NAME = "' + table_name + '"'
     con = dj.conn()
     return con.query(query).fetchone()[0]
+
+def sobreescribe_acciones(df_acciones, id_grupo, costo_accion):
+
+    socio_list = df_acciones.index.to_list()
+    for idx_socio in range(df_acciones.shape[0]):
+
+        socio = socio_list[idx_socio]
+        acciones = df_acciones.loc[socio, 'COMPRA_ACCIONES'][0]*costo_accion
+
+        write_first_acciones_socio(id_grupo, socio, acciones)
+
+def sobreescribe_caja_acciones_sesion(df_acciones, sesion_id, costo_accion):
+
+    socio_list = df_acciones.index.to_list()
+    acciones = 0
+    for idx_socio in range(df_acciones.shape[0]):
+        socio = socio_list[idx_socio]
+        acciones += df_acciones.loc[socio, 'COMPRA_ACCIONES'][0]*costo_accion
+
+    query = dict()
+    query['Sesion_id'] = sesion_id
+    query['Caja'] = acciones
+    query['Acciones'] = acciones
+
+    cosecha_db.Sesiones().update1(query)
+
+def abona_a_caja(monto_abono, sesion_id, overwrite=False):
+
+    query = dict()
+    query['Sesion_id'] = sesion_id
+
+    caja = (cosecha_db.Sesiones & query).fetch('Caja', as_dict = True)
+
+    query2 = dict()
+    query2['Sesion_id'] = sesion_id
+    if overwrite:
+        query2['Caja'] = monto_abono
+    else:
+        query2['Caja'] = caja[0]['Caja'] + monto_abono
+
+    cosecha_db.Sesiones().update1(query2)
+
+def sobreescribe_ganancias(df_ganancias, sesion_id):
+
+    socio_list = df_ganancias.index.to_list()
+    for idx_socio in range(df_ganancias.shape[0]):
+
+        socio = socio_list[idx_socio]
+        ganancias = df_ganancias.loc[socio, 'GANANCIAS'][0]
+
+        overwrite_ganancias_socio(socio, sesion_id, ganancias)
+
+def suma_abonos(df_abono):
+
+    socio_list = df_abono.index.to_list()
+    abono = 0
+    for idx_socio in range(df_abono.shape[0]):
+
+        socio = socio_list[idx_socio]
+        abono += abono.loc[socio, 'ABONO'][0]
+
+    return abono
 
 def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False):
 

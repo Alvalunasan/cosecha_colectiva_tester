@@ -110,9 +110,9 @@ def append_prestamo_df(df_prestamo, df_ampliacion, df_num_sesiones):
     return df_prestamo
 
 
-def read_transform_info_xls(xls_name, session_num, dict_users, type_xls='MAYRA'):
+def read_transform_info_xls(xls_name, session_num, dict_users, type_xls='MAYRA', hoja="Hoja1"):
 
-    dict_session = get_session_info_xls(xls_name, session_num, type_xls=type_xls)
+    dict_session = get_session_info_xls(xls_name, session_num, type_xls=type_xls, hoja=hoja)
     dict_session = insert_id_users_dict_session(dict_session, dict_users)
     if type_xls != 'MAYRA':
         new_dict_sesison = dict()
@@ -123,13 +123,13 @@ def read_transform_info_xls(xls_name, session_num, dict_users, type_xls='MAYRA')
 
     return dict_session
 
-def get_session_info_xls(xls_name, session_num, type_xls='MAYRA'):
+def get_session_info_xls(xls_name, session_num, type_xls='MAYRA', hoja="Hoja1"):
     #Obtiene todos los movimientos para 1 sesion a partir de un excel
 
     #Lee el excel y lo pasa a DF
     xls_filename = pathlib.Path(config.xls_dir, xls_name)
 
-    df_sesion = read_caf_excel_sheet(xls_filename, "Hoja1")
+    df_sesion = read_caf_excel_sheet(xls_filename, hoja)
     df_sesion = df_sesion.apply(lambda x: x.astype(str).str.upper())
 
     # toma los datos del DF para cada palabra clave ["AHORRO", "PRÉSTAMO", "ABONO", "MULTAS", "INTERÉS"]
