@@ -233,16 +233,17 @@ def get_grupo_id_by_name(group_name):
         grupo_id = grupo_id[0]['Grupo_id']
         return grupo_id
     
-def restart_grupo_acciones(id_grupo):
+def restart_grupo_acciones(id_grupo, desde_sesion_0=False):
 
     grupo_q = dict()
     grupo_q['Grupo_id'] = id_grupo
-
     grupo_socios = (cosecha_db.GrupoSocio & grupo_q).fetch('KEY', as_dict=True)
 
-    dict_acuerdos = get_acuerdos_grupo(id_grupo)
-
-    minimo_aportacion = float(dict_acuerdos['Minimo_aportacion'])
+    if not desde_sesion_0:
+        dict_acuerdos = get_acuerdos_grupo(id_grupo)
+        minimo_aportacion = float(dict_acuerdos['Minimo_aportacion'])
+    else:
+        minimo_aportacion = 0
 
     for socio in grupo_socios:
 
@@ -263,7 +264,10 @@ def get_caja_sesion(id_sesion):
     sesion_q = dict()
     sesion_q['Sesion_id'] = id_sesion
     caja = (cosecha_db.Sesiones & sesion_q).fetch('Caja', as_dict=False)
-    caja = float(caja[0])
+    if len(caja) > 0:
+        caja = float(caja[0])
+    else:
+        caja = 0
 
     return caja
 
@@ -377,7 +381,7 @@ def suma_abonos(df_abono):
 
     return abono
 
-def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False):
+def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion_0=False):
 
     base_query = 'DELETE from ' + config.db_name + '.'
 
@@ -399,7 +403,7 @@ def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False):
     #Selecciona todas las sesiones
     sesiones = (cosecha_db.Sesiones & grupo_q).fetch('KEY', order_by='Sesion_id', as_dict=True)
     #Conservar la primera sesión (compras iniciales de la caja)
-    if solo_sesiones:
+    if solo_sesiones and not desde_sesion_0:
         sesiones = sesiones[1:]
 
     acuerdos_del = acuerdos
@@ -452,8 +456,75 @@ def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False):
         cosecha_db.Acuerdos.update1(query_update_acuerdo)
 
     if  solo_sesiones: 
-        restart_grupo_acciones(id_grupo)
+        restart_grupo_acciones(id_grupo, desde_sesion_0)
 
 
+def insert_sesion(sesion_data):
 
 
+    (cosecha_db.Sesiones).insert1(sesion_data)
+    time.sleep(0.1)
+    return get_active_sesion(sesion_data['Grupo_id'])
+
+
+def insert_prestamo(prestamo_data):
+
+    (cosecha_db.Prestamos).insert(prestamo_data)
+    time.sleep(0.1)
+    prestamo_ids = cosecha_db.Prestamos.fetch('KEY', order_by='Prestamo_id desc', limit=len(prestamo_data))
+    prestamo_ids = pd.DataFrame(prestamo_ids)
+    prestamo_ids = prestamo_ids.sort_values(by='Prestamo_id').reset_index(drop=True)
+    return prestamo_ids
+
+def insert_multa(multa_data):
+
+    (cosecha_db.Multas).insert(multa_data)
+    time.sleep(0.1)
+    multa_ids = cosecha_db.Multas.fetch('KEY', order_by='Multa_id desc', limit=len(multa_data))
+    multa_ids = pd.DataFrame(multa_ids)
+    multa_ids = multa_ids.sort_values(by='Multa_id').reset_index(drop=True)
+    return multa_ids
+
+def insert_transaccion(transaccion_data):
+
+    (cosecha_db.Transacciones).insert(transaccion_data)
+    time.sleep(0.1)
+    transaccion_ids = cosecha_db.Transacciones.fetch('KEY', order_by='Transaccion_id desc', limit=len(transaccion_data))
+    transaccion_ids = pd.DataFrame(transaccion_ids)
+    transaccion_ids = transaccion_ids.sort_values(by='Transaccion_id').reset_index(drop=True)
+    return transaccion_ids
+
+def insert_ganancia(ganancia_data):
+
+    (cosecha_db.Ganancias).insert(ganancia_data)
+    time.sleep(0.1)
+    ganancia_ids = cosecha_db.Ganancias.fetch('KEY', order_by='Ganancias_id desc', limit=len(ganancia_data))
+    ganancia_ids = pd.DataFrame(ganancia_ids)
+    ganancia_ids = ganancia_ids.sort_values(by='Ganancias_id').reset_index(drop=True)
+    return ganancia_ids
+
+def insert_asistencia(asistencia_data):
+
+    (cosecha_db.Asistencias).insert(asistencia_data)
+    time.sleep(0.1)
+
+def update_socio_acciones(socio_acciones):
+
+    for i in range(len(socio_acciones)):
+
+        query = dict()
+        query['Grupo_socio_id'] = socio_acciones[i]['Grupo_socio_id']
+        query['Acciones'] = socio_acciones[i]['Acciones']
+
+        (cosecha_db.GrupoSocio).update1(query)
+
+def update_sesion(sesion_id=None, caja=None, acciones=None, ganancias=None, activa=0):
+            
+    query = dict()
+    query['Sesion_id'] = sesion_id
+    query['Caja'] = caja
+    query['Acciones'] = acciones
+    query['Ganancias'] = ganancias
+    query['Activa'] = activa
+
+    (cosecha_db.Sesiones).update1(query)

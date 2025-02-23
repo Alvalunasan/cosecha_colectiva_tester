@@ -1,7 +1,11 @@
+README.md
 setup.py
+cosecha_colectiva/CAF_DB_Monitor.py
 cosecha_colectiva/__init__.py
 cosecha_colectiva/config.py
+cosecha_colectiva/main_tester.py
 cosecha_colectiva/miscelaneous.py
+cosecha_colectiva/query_cosecha.py
 cosecha_colectiva/test_cosecha_api.py
 cosecha_colectiva.egg-info/PKG-INFO
 cosecha_colectiva.egg-info/SOURCES.txt

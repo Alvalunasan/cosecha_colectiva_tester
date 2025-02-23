@@ -21,6 +21,8 @@ class CAF_API_general():
         dict_payload = {"Username": username, "Password": password}
         response = requests.request("POST", config.url_dict['url_login'], headers=config.default_headers, data=json.dumps(dict_payload))
 
+        print(response)
+
         if not response:
             logging.error('%s', response.text)
             raise Exception('Login incorrecto')
@@ -191,6 +193,30 @@ class CAF_API_group_creation_tester():
         qc.write_first_caja(id_sesion, caja_final)
 
     @staticmethod
+    def main_create_group_simple(xls_name):
+
+        logging.info('Proceso creación grupo %s', xls_name)
+
+        CAF_API_group_creation_tester.create_users(xls_name)
+        time.sleep(8)
+        admin_header,_ = CAF_API_general.login_first_user_excel(xls_name)
+        time.sleep(8)
+        id_grupo = CAF_API_group_creation_tester.create_group(xls_name, admin_header)
+        time.sleep(8)
+        CAF_API_group_creation_tester.add_xls_users_group(xls_name, id_grupo)
+        time.sleep(8)
+        #CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+
+        #id_sesion = qc.get_active_sesion(id_grupo)
+
+        #time.sleep(8)
+        #CAF_API_group_creation_tester.create_acuerdos(xls_name)
+        #time.sleep(8)
+        #CAF_API_group_creation_tester.acciones_iniciales(xls_name, id_grupo, id_sesion)
+        #time.sleep(8)
+        #CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+
+    @staticmethod
     def main_create_group(xls_name):
 
         logging.info('Proceso creación grupo %s', xls_name)
@@ -220,6 +246,8 @@ class CAF_API_sessions_tester():
     @staticmethod
     def create_session(id_grupo, admin_header):
 
+        print('create_session fun')
+
         logging.info('API CALL, Crear sesion %d', id_grupo)
 
         payload_session = CAF_API_sessions_tester.create_session_payload(id_grupo)
@@ -227,6 +255,13 @@ class CAF_API_sessions_tester():
 
         logging.info('url_crear_sesion %s payload %s', url_crear_sesion, payload_session)
         response = requests.request("POST", url_crear_sesion, headers=admin_header, data=json.dumps(payload_session))
+
+        print('url_crear_sesion aqui .....')
+
+        print(response.json())
+        print(response)
+
+        print(response.text)
 
         if not response:
             logging.error('%s', response.text)
@@ -576,13 +611,20 @@ class CAF_API_sessions_tester():
 
 
     @staticmethod
-    def main_create_sesion(xls_name, session_num, type_xls='MAYRA'):
+    def main_create_sesion(xls_name, session_num, type_xls='MAYRA', id_grupo=None):
 
         logging.info('Inicia Sesion: %s %s', xls_name, config.month_words[session_num-1])
 
         #Crear sesion
-        id_grupo, admin_header = CAF_API_general.get_grupo_id_admin_header_xls(xls_name)
+        
+        id_grupo_xls, admin_header = CAF_API_general.get_grupo_id_admin_header_xls(xls_name)
+
+        if id_grupo is None:
+            id_grupo = id_grupo_xls
+
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+
+        print('id_grupo', id_grupo)
 
         sesion_list = qc.get_all_sesiones_grupo(id_grupo)
 

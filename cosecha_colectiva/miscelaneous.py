@@ -6,10 +6,25 @@ import pathlib
 from cosecha_colectiva import config
 
 
+def read_caf_excel_sheet_old(filename, sheet_type):
+
+    df_data = pd.read_excel(filename, sheet_name=sheet_type, dtype=config.xls_types[sheet_type], header=config.xls_headers[sheet_type])
+    return df_data
 
 def read_caf_excel_sheet(filename, sheet_type):
 
-    df_data = pd.read_excel(filename, sheet_name=sheet_type, dtype=config.xls_types[sheet_type], header=config.xls_headers[sheet_type])
+    filename = filename.stem
+    #filename = filename.replace('.xlsx','')
+    id = config.dict_file_name_sheets_id[filename]
+
+    base_url = 'https://docs.google.com/spreadsheets/d/'
+    suffix = '/export?format=xlsx'
+    url = base_url+id+suffix
+
+    df_data = pd.read_excel(url,
+                          sheet_name=sheet_type,
+                          dtype=config.xls_types[sheet_type], header=config.xls_headers[sheet_type]
+                  )
     return df_data
 
 

@@ -4,3 +4,4 @@ jupyterlab
 matplotlib
 requests
 pathlib
+certifi

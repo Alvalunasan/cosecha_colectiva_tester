@@ -84,16 +84,20 @@ xls_words_int = ['COMPRA_ACCIONES', 'PAGO_MULTA', 'AMPLIACIÓN', 'NUM_SESIONES',
 column_xls_words = 1
 month_words = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
 
-db_name = 'heroku_59f792929604e63'
+db_name = 'railway'
 
 
 columnas_ganancias = {
     'Ganancias_id': int,
+    'Ganancia_accion': float,
     'Monto_ganancia': float,
     'Entregada': int,
     'Socio_id': int,
-    'Sesion_id': int
+    'Sesion_id': int,
+    'periodo': str
 } 
+
+
 
 columnas_interes_prestamo = {
     'Interes_prestamo_id': int,
@@ -106,7 +110,7 @@ columnas_interes_prestamo = {
 columnas_interes_prestamo_comp = columnas_interes_prestamo.copy()
 columnas_interes_prestamo_comp.pop("Interes_prestamo_id", None)
 
-columnas_socio_accion = ['Socio_id', 'Tipo_socio', 'Acciones', 'Status']
+columnas_socio_accion = ['Grupo_socio_id', 'Socio_id', 'Grupo_id', 'Tipo_socio', 'Acciones', 'Status']
 
 columnas_acuerdos = ['Grupo_id', 'Status', 'Tasa_interes', 'Limite_credito', 'Creditos_simultaneos', 
                     'Interes_morosidad', 'Ampliacion_prestamos', 'Interes_ampliacion', 
@@ -115,20 +119,30 @@ columnas_acuerdos = ['Grupo_id', 'Status', 'Tasa_interes', 'Limite_credito', 'Cr
 columnas_acuerdos_prestamo = ['Grupo_id', 'Tasa_interes', 'Limite_credito', 'Creditos_simultaneos', 
                     'Interes_morosidad', 'Ampliacion_prestamos', 'Interes_ampliacion', 
                     'Mod_calculo_interes', 'Tasa_interes_prestamo_grande']
-columnas_prestamos = ['Prestamo_id', 'Monto_prestamo', 'Monto_pagado', 'Interes_generado', 'Interes_pagado',
-                    'Estatus_ampliacion', 'Num_sesiones', 'Sesiones_restantes', 'Estatus_prestamo', 'Socio_id',
-                    'Sesion_id', 'Acuerdos_id', 'Prestamo_original_id'] + columnas_acuerdos_prestamo
+
+bd_columnas_prestamo = ['Prestamo_id', 'Monto_prestamo', 'Monto_pagado', 'Interes_generado', 'Interes_pagado',
+                        'Fecha_inicial', 'Fecha_final', 'Estatus_ampliacion', 'Observaciones', 'Num_sesiones', 
+                        'Sesiones_restantes', 'Estatus_prestamo', 'Socio_id', 'Sesion_id', 'Acuerdos_id', 'Prestamo_original_id']
+
+
+columnas_asistencia = ['Socio_id', 'Sesion_id', 'Presente']
+
+columnas_prestamos = bd_columnas_prestamo + columnas_acuerdos_prestamo
 
 columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono', 'Status_socio']
 
 columnas_prestamos_final = columnas_prestamos + columnas_extras_prestamo
 
-columnas_multa = ['Multa_id', 'Monto_multa', 'Descripcion', 'Status', 'Sesion_id', 'Socio_id']
-
+columnas_multa = ['Multa_id', 'Monto_multa', 'Descripcion', 'Status', 'Sesion_id', 'Socio_id', 'Transaccion_id', 'created_at']
 columnas_multa_extra = ['Pago_en_sesion']
 
 columnas_multa_final = columnas_multa + columnas_multa_extra
 
+bd_columnas_sesiones = ['Sesion_id', 'Fecha', 'Activa', 'Caja', 'Acciones', 'Ganancias', 'Fecha_prox_reunion', 'Lugar_prox_reunion', 'Tipo_sesion', 'Grupo_id', 'created_at']
+
+bd_columnas_transacciones = ['Transaccion_id', 'Cantidad_movimiento', 'Caja', 'Timestamp', 'Sesion_id', 'Socio_id', 'Acuerdo_id', 'Catalogo_id']
+
+bd_columnas_transacciones_prestamos = ['Transaccion_prestamo_id', 'Prestamo_id', 'Transaccion_id', 'Monto_abono_prestamo', 'Monto_abono_interes']
 
 acuerdos_var_type ={
     'Acuerdo_id': int,
@@ -155,3 +169,26 @@ acuerdos_var_type ={
 }
 
 socio_acciones_min_columnas = ['']
+
+
+dict_file_name_sheets_id = {
+  'GrupoCafam': '1zH7yr2HcpdOPa2_rgUSYJvsdmPXKP4n8HnunF3e0Fpo',
+  'CAF_GrupoTroll': '15DHCtIefdGAN2U6mmauchlIAp_7XGDdOKH0Ydwj3RQw',
+  'CAF_GrupoTesteador': '1Hak3P-S9R-nnLAJiMWG0NJD5p6VYJBG4p9Mv94yhTyY',
+  'CAF_GrupoTest': '1AW0yEOczQxp31GKyMDJfyQ0UCEQdlZyRs2eroYYc4UY',
+  'CAF_GrupoMesero': '104_k4Lp_L06k6WBrg4L70nReOXtWVqYnONHrRCcEPgM',
+  'CAF_GrupoHidalgo': '1bIZhM7sriUn6W0C3xhggqll_L80dSlY564fV7TxUZ9',
+  'CAF_GrupoDomador': '1BaIdWwwf-D1dtoQ7ndiawGt7YbbMY_-UkB_mIr2jbyA',
+  'CAF_GrupoCalcetin': '1TlZY_Q42dgfzWDEWo30TabPsZTEsABPqjdVyUSXy2Nk',
+  'CAF_GrupoCafam': '12_xaG2gVzYJlvqxB5boWfCWWIsCgbI5j3icfmbYQFVY',
+  'CAF_GrupoAstronomo': '1SvXHIPjpFJTOisxbnywv7q2oR7JuEh_McBsJhX44tQg',
+  'CAF_GrupoAstronomo': '1SvXHIPjpFJTOisxbnywv7q2oR7JuEh_McBsJhX44tQg',
+  'Alcancía Viva': '1j_5iiWZc4_mJQrLkkCJ_RPNnRtQmltkG4xLQCEfGPPE',
+}
+
+tipo_xls_catalogo_bd = {
+    'COMPRA_ACCIONES': 'COMPRA_ACCION',
+    'ABONO': 'ABONO_PRESTAMO',
+    'RETIRO_ACCIONES': 'RETIRO_ACCION',
+    'PRÉSTAMO': 'ENTREGA_PRESTAMO'
+}
