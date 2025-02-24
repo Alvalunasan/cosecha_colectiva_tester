@@ -129,6 +129,7 @@ def read_transform_info_xls(xls_name, session_num, dict_users, type_xls='MAYRA',
 
     dict_session = get_session_info_xls(xls_name, session_num, type_xls=type_xls, hoja=hoja)
     dict_session = insert_id_users_dict_session(dict_session, dict_users)
+    print(dict_session)
     if type_xls != 'MAYRA':
         new_dict_sesison = dict()
         for dict_part in dict_session.keys():

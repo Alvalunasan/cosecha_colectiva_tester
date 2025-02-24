@@ -169,7 +169,7 @@ def get_socios_grupo(id_grupo, as_orderded_dict=True):
 
 def get_socios_acciones_grupo(id_grupo):
 
-    socio_id_list = (cosecha_db.GrupoSocio & "Grupo_id ="+str(id_grupo)).fetch(*config.columnas_socio_accion, order_by='Socio_id', as_dict=True)
+    socio_id_list = ((cosecha_db.GrupoSocio * cosecha_db.Socios.proj('CURP')) & "Grupo_id ="+str(id_grupo)).fetch(*config.columnas_socio_accion_plus, order_by='Socio_id', as_dict=True)
 
     return socio_id_list
 
@@ -494,6 +494,26 @@ def insert_transaccion(transaccion_data):
     transaccion_ids = transaccion_ids.sort_values(by='Transaccion_id').reset_index(drop=True)
     return transaccion_ids
 
+def insert_transaccion_prestamo(transaccion_prestamo_data):
+
+    (cosecha_db.TransaccionPrestamos).insert(transaccion_prestamo_data)
+    time.sleep(0.1)
+    transaccion_prestamo_ids = cosecha_db.TransaccionPrestamos.fetch('KEY', order_by='Transaccion_prestamo_id desc',
+                                                                     limit=len(transaccion_prestamo_data))
+    transaccion_prestamo_ids = pd.DataFrame(transaccion_prestamo_ids)
+    transaccion_prestamo_ids = transaccion_prestamo_ids.sort_values(by='Transaccion_prestamo_id').reset_index(drop=True)
+    return transaccion_prestamo_ids
+
+def insert_interes_prestamo(interes_prestamo_data):
+
+    (cosecha_db.InteresPrestamo).insert(interes_prestamo_data)
+    time.sleep(0.1)
+    interes_prestamo_ids = cosecha_db.InteresPrestamo.fetch('KEY', order_by='Interes_prestamo_id desc',
+                                                                     limit=len(interes_prestamo_data))
+    interes_prestamo_ids = pd.DataFrame(interes_prestamo_ids)
+    interes_prestamo_ids = interes_prestamo_ids.sort_values(by='Interes_prestamo_id').reset_index(drop=True)
+    return interes_prestamo_ids
+
 def insert_ganancia(ganancia_data):
 
     (cosecha_db.Ganancias).insert(ganancia_data)
@@ -528,3 +548,11 @@ def update_sesion(sesion_id=None, caja=None, acciones=None, ganancias=None, acti
     query['Activa'] = activa
 
     (cosecha_db.Sesiones).update1(query)
+
+def update_prestamo(prestamo_data):
+            
+    (cosecha_db.Prestamos).update1(prestamo_data)
+
+def update_multa(multa_data):
+            
+    (cosecha_db.Multas).update1(multa_data)

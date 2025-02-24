@@ -112,6 +112,10 @@ columnas_interes_prestamo_comp.pop("Interes_prestamo_id", None)
 
 columnas_socio_accion = ['Grupo_socio_id', 'Socio_id', 'Grupo_id', 'Tipo_socio', 'Acciones', 'Status']
 
+columnas_socio = ['CURP']
+
+columnas_socio_accion_plus = columnas_socio_accion+columnas_socio
+
 columnas_acuerdos = ['Grupo_id', 'Status', 'Tasa_interes', 'Limite_credito', 'Creditos_simultaneos', 
                     'Interes_morosidad', 'Ampliacion_prestamos', 'Interes_ampliacion', 
                     'Mod_calculo_interes', 'Tasa_interes_prestamo_grande']
@@ -120,18 +124,21 @@ columnas_acuerdos_prestamo = ['Grupo_id', 'Tasa_interes', 'Limite_credito', 'Cre
                     'Interes_morosidad', 'Ampliacion_prestamos', 'Interes_ampliacion', 
                     'Mod_calculo_interes', 'Tasa_interes_prestamo_grande']
 
+
+columnas_asistencia = ['Socio_id', 'Sesion_id', 'Presente']
+
 bd_columnas_prestamo = ['Prestamo_id', 'Monto_prestamo', 'Monto_pagado', 'Interes_generado', 'Interes_pagado',
                         'Fecha_inicial', 'Fecha_final', 'Estatus_ampliacion', 'Observaciones', 'Num_sesiones', 
                         'Sesiones_restantes', 'Estatus_prestamo', 'Socio_id', 'Sesion_id', 'Acuerdos_id', 'Prestamo_original_id']
-
-
-columnas_asistencia = ['Socio_id', 'Sesion_id', 'Presente']
 
 columnas_prestamos = bd_columnas_prestamo + columnas_acuerdos_prestamo
 
 columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono', 'Status_socio']
 
 columnas_prestamos_final = columnas_prestamos + columnas_extras_prestamo
+
+columnas_update_prestamo = ['Monto_pagado', 'Interes_generado', 'Interes_pagado', 'Sesiones_restantes',
+                            'Estatus_prestamo', 'Estatus_ampliacion', 'Prestamo_original_id']
 
 columnas_multa = ['Multa_id', 'Monto_multa', 'Descripcion', 'Status', 'Sesion_id', 'Socio_id', 'Transaccion_id', 'created_at']
 columnas_multa_extra = ['Pago_en_sesion']
@@ -143,6 +150,8 @@ bd_columnas_sesiones = ['Sesion_id', 'Fecha', 'Activa', 'Caja', 'Acciones', 'Gan
 bd_columnas_transacciones = ['Transaccion_id', 'Cantidad_movimiento', 'Caja', 'Timestamp', 'Sesion_id', 'Socio_id', 'Acuerdo_id', 'Catalogo_id']
 
 bd_columnas_transacciones_prestamos = ['Transaccion_prestamo_id', 'Prestamo_id', 'Transaccion_id', 'Monto_abono_prestamo', 'Monto_abono_interes']
+
+bd_columnas_interes_prestamo = ['Interes_prestamo_id', 'Prestamo_id', 'Sesion_id', 'Monto_interes', 'Tipo_interes']
 
 acuerdos_var_type ={
     'Acuerdo_id': int,

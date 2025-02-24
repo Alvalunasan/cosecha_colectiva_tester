@@ -7,6 +7,8 @@ logs/*.log
 
 xls_grupos/Original_XLS/
 
-*__pycache__/
+*__pycache__*
+
+cosecha_colectiva/__pycache__/*
 
 *.pyc
