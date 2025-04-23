@@ -60,8 +60,9 @@ class CAF_DB_Monitor():
 
 
 
-    def __init__(self, id_grupo, xls_name) -> None:
+    def __init__(self, id_grupo, xls_name, starting_date=date.today()) -> None:
 
+        self.fecha_grupo = starting_date
 
         self.id_grupo = id_grupo
         self.acuerdos = pd.Series(qc.get_acuerdos_grupo(self.id_grupo))
@@ -82,7 +83,6 @@ class CAF_DB_Monitor():
                 if var_type:
                     self.ganancias[ganancia_var] = self.ganancias[ganancia_var].astype(var_type)
 
-        self.ganancias_acum = self.acumular_ganancias()
         self.ganancias_sesion = None
 
         self.multas = pd.DataFrame(qc.get_multas_sesiones(self.sesiones))
@@ -123,7 +123,7 @@ class CAF_DB_Monitor():
         self.socios_xls = pd.DataFrame(ms.get_dict_usuarios_xls(xls_name))
 
         if self.socios_xls.shape[0] != self.socios_acciones.shape[0]:
-            raise('Numero de socios en Excel no coincide con los usuarios de la base de datos')
+            raise Exception('Numero de socios en Excel no coincide con los usuarios de la base de datos')
 
         mini_socios = self.socios_xls['CURP'].to_frame().copy()
         mini_socios = mini_socios.reset_index()
@@ -132,7 +132,7 @@ class CAF_DB_Monitor():
         aux_df = pd.merge(left=self.socios_acciones, right=mini_socios, on='CURP', how='inner')
 
         if aux_df.shape[0] < self.socios_acciones.shape[0]:
-            raise('CURPS en Excel no coincide con los CURPS de losusuarios de la base de datos')
+            raise Exception('CURPS en Excel no coincide con los CURPS de los usuarios de la base de datos')
         
         self.socios_acciones = aux_df.sort_values(by='xls_order')
         self.socios_acciones = self.socios_acciones.reset_index(drop=True)
@@ -418,12 +418,15 @@ class CAF_DB_Monitor():
                     series_prestamo = self.crea_nuevo_prestamo(monto_pedir, ampliacion, num_sesiones, socio, sesion_list[-1]['Sesion_id'], prestamo_original=prestamo_id_original)
                     self.prestamos.loc[self.prestamos.shape[0]] = series_prestamo
                     self.caja = self.caja - (monto_pedir - debe_total)
+            
+            if self.caja < 0:
+                raise Exception('No hay suficiente dinero en caja para préstamo')
     
     def crea_nuevo_prestamo(self, monto, ampliacion, num_sesiones, socio, sesion, prestamo_original=None):
 
         ultimo_prestamo = -1000
-        #if self.prestamos.shape[0] > 0:
-        #    ultimo_prestamo = self.prestamos['Prestamo_id'].max() + 1
+        if self.prestamos.shape[0] > 0:
+            ultimo_prestamo = self.prestamos['Prestamo_id'].max() + 1
         #else:
         #    ultimo_prestamo = qc.get_next_autoincrement_table('prestamos')
 
@@ -436,8 +439,8 @@ class CAF_DB_Monitor():
             'Monto_pagado': 0,
             'Interes_generado': 0,
             'Interes_pagado': 0,
-            'Fecha_inicial': datetime.strftime(date.today(), format='%Y-%m-%d'),
-            'Fecha_final':  datetime.strftime(date.today()+ relativedelta(months=num_sesiones), format='%Y-%m-%d'),
+            'Fecha_inicial': datetime.strftime(self.fecha_sesion, format='%Y-%m-%d'),
+            'Fecha_final':  datetime.strftime(self.fecha_sesion + relativedelta(months=num_sesiones), format='%Y-%m-%d'),
             'Observaciones': 'Préstamo generado en script automático',
             'Estatus_ampliacion': bool(ampliacion),
             'Num_sesiones': num_sesiones,
@@ -495,21 +498,19 @@ class CAF_DB_Monitor():
     def crea_nueva_multa(self, monto_multa, socio, sesion, idx_multa_socio):
 
         ultima_multa = -1000
-        #if self.multas.shape[0] > 0:
-        #    ultima_multa = self.multas['Multa_id'].max() + 1
-        #else:
-        #    ultima_multa = qc.get_next_autoincrement_table('multas')
+        if self.multas.shape[0] > 0:
+            ultima_multa = self.multas['Multa_id'].max() + 1
 
         dict_multa = {
             'Multa_id': ultima_multa,
             'Monto_multa': monto_multa,
-            'Descripcion': "Multa # " + str(idx_multa_socio+1) + " socio "  + str(socio) + " grupo: " +  str(self.id_grupo) + "con script",
+            'Descripcion': "Multa # " + str(idx_multa_socio+1) + " socio "  + str(socio) + " grupo: " +  str(self.id_grupo) + " con script",
             'Status': 0,
             'Sesion_id': sesion,
             'Socio_id': socio,
             'Pago_en_sesion': 0,
             'Transaccion_id': None,
-            'created_at': datetime.strftime(datetime.now(), format='%Y-%m-%d %H:%M:%S'),
+            'created_at': datetime.strftime(self.fecha_sesion, format='%Y-%m-%d %H:%M:%S'),
         }
 
         series_multa = pd.Series(dict_multa)
@@ -565,17 +566,19 @@ class CAF_DB_Monitor():
 
         self.ganancias = self.ganancias.reset_index(drop=True)
 
+        
+
     def actualiza_sesiones(self, bd_update=False):
 
         if bd_update:
             base_sesion = {
-                'Fecha': datetime.strftime(date.today(), format='%Y-%m-%d'),
+                'Fecha': datetime.strftime(self.fecha_sesion, format='%Y-%m-%d'),
                 'Activa': 1,
-                'Fecha_prox_reunion': datetime.strftime(date.today()+ relativedelta(months=1), format='%Y-%m-%d'),
+                'Fecha_prox_reunion': datetime.strftime(self.fecha_sesion + relativedelta(months=1), format='%Y-%m-%d'),
                 'Lugar_prox_reunion': 'Sesion creada en script',
                 'Tipo_sesion': 1,
                 'Grupo_id': self.id_grupo,
-                'created_at': datetime.strftime(date.today(), '%Y-%m-%d')
+                'created_at': datetime.strftime(self.fecha_sesion, '%Y-%m-%d')
             }
             if self.sesiones_bd.shape[0] == 0:
                 base_sesion['Caja'] = 0
@@ -609,7 +612,7 @@ class CAF_DB_Monitor():
             #acuerdos_series['Acuerdo_id'] = qc.get_next_autoincrement_table('acuerdos')
             acuerdos_series['Acuerdo_id'] = -100
             acuerdos_series['Grupo_id'] = self.acuerdos['Grupo_id']
-            acuerdos_series['Fecha_acuerdos'] = date.today()
+            acuerdos_series['Fecha_acuerdos'] = self.fecha_sesion
             acuerdos_series['Fecha_acuerdos_fin'] = datetime.strptime(acuerdos_series['Fecha_acuerdos_fin'], '%Y-%m-%d').date()
             acuerdos_series['Status'] = 1
             acuerdos_series['Id_socio_administrador'] = self.acuerdos['Id_socio_administrador']
@@ -752,7 +755,7 @@ class CAF_DB_Monitor():
             these_transactions['Caja'] = these_transactions['Cantidad_movimiento'].cumsum()
 
             these_transactions['Caja'] += current_caja
-            these_transactions['Timestamp'] = datetime.strftime(datetime.now(), format='%Y-%m-%d %H:%M:%S')
+            these_transactions['Timestamp'] = datetime.strftime(self.fecha_sesion, format='%Y-%m-%d %H:%M:%S')
             these_transactions['Sesion_id'] = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Sesion_id']
             these_transactions = these_transactions.reset_index(drop=False)
             these_transactions = these_transactions.rename(columns={'index': 'Socio_id'})
@@ -774,7 +777,7 @@ class CAF_DB_Monitor():
             these_transactions['Caja'] = these_transactions['Cantidad_movimiento'].cumsum()
 
             these_transactions['Caja'] += current_caja
-            these_transactions['Timestamp'] = datetime.strftime(datetime.now(), format='%Y-%m-%d %H:%M:%S')
+            these_transactions['Timestamp'] = datetime.strftime(self.fecha_sesion, format='%Y-%m-%d %H:%M:%S')
             these_transactions['Sesion_id'] = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Sesion_id']
             these_transactions['Acuerdo_id'] = self.acuerdos['Acuerdo_id']
             these_transactions['Transaccion_id'] = -1000
@@ -799,7 +802,7 @@ class CAF_DB_Monitor():
             these_prestamos = these_prestamos.rename(columns={'Monto_prestamo': 'Cantidad_movimiento'})
             these_prestamos['Caja'] = these_prestamos['Cantidad_movimiento'].cumsum()
             these_prestamos['Caja'] = these_prestamos['Caja'] + current_caja
-            these_prestamos['Timestamp'] = datetime.strftime(datetime.now(), format='%Y-%m-%d %H:%M:%S')
+            these_prestamos['Timestamp'] = datetime.strftime(self.fecha_sesion, format='%Y-%m-%d %H:%M:%S')
             these_prestamos['Acuerdo_id'] = self.acuerdos['Acuerdo_id']
             these_prestamos['Catalogo_id'] = 'ENTREGA_PRESTAMO'
             these_prestamos['Transaccion_id'] = 0
@@ -821,7 +824,7 @@ class CAF_DB_Monitor():
             these_multas = these_multas.rename(columns={'Monto_multa': 'Cantidad_movimiento'})
             these_multas['Caja'] = these_multas['Cantidad_movimiento'].cumsum()
             these_multas['Caja'] = these_multas['Caja'] + current_caja
-            these_multas['Timestamp'] = datetime.strftime(datetime.now(), format='%Y-%m-%d %H:%M:%S')
+            these_multas['Timestamp'] = datetime.strftime(self.fecha_sesion, format='%Y-%m-%d %H:%M:%S')
             these_multas['Acuerdo_id'] = self.acuerdos['Acuerdo_id']
             these_multas['Catalogo_id'] = 'PAGO_MULTA'
             these_multas['Transaccion_id'] = 0
@@ -858,7 +861,7 @@ class CAF_DB_Monitor():
             these_multas = these_multas.to_dict('records')
 
             multa_ids = qc.insert_multa(these_multas)
-            index_multas = self.multas.loc[self.prestamos['Sesion_id'] == this_sesion, 'Multa_id'].index
+            index_multas = self.multas.loc[self.multas['Sesion_id'] == this_sesion, 'Multa_id'].index
             multa_ids = multa_ids.set_index(index_multas)
             self.multas.loc[self.multas['Sesion_id'] == this_sesion, 'Multa_id'] = multa_ids['Multa_id']
 
@@ -885,10 +888,10 @@ class CAF_DB_Monitor():
         pago_prestamo_now = self.transacciones_bd.loc[((self.transacciones_bd['Sesion_id'] == this_sesion) & 
                                                       (self.transacciones_bd['Catalogo_id'] == "ABONO_PRESTAMO")),:].copy()
         pago_prestamo_now = pago_prestamo_now.reset_index(drop=True)
-        pago_prestamo_now['Prestamo_id'] = pago_prestamo_now['Prestamo_id'].astype("Int64")
 
         if pago_prestamo_now.shape[0] > 0:
 
+            pago_prestamo_now['Prestamo_id'] = pago_prestamo_now['Prestamo_id'].astype("Int64")
             pago_prestamo_now['Transaccion_prestamo_id'] = 0
             pago_prestamo_now = pago_prestamo_now.rename(columns={'sobrante_abono':'Monto_abono_prestamo' ,'Ultimo_interes_pagado': 'Monto_abono_interes'})
             pago_prestamo_now = pago_prestamo_now[config.bd_columnas_transacciones_prestamos]
@@ -982,8 +985,27 @@ class CAF_DB_Monitor():
                 
                 qc.update_multa(dict_update_multa)
 
+    def prepare_update_sesion(self):
+
+        
+        self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Acciones'] = self.socios_acciones['Acciones'].sum()
+        self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Ganancias'] = self.ganancias['Monto_ganancia'].sum()
+        self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Caja'] = self.caja
+        self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Activa'] = 0
+
+        this_sesion = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Sesion_id']
+        qc.update_sesion(sesion_id=this_sesion, caja=self.caja, 
+                            acciones=self.socios_acciones['Acciones'].sum(),
+                            ganancias=self.ganancias['Monto_ganancia'].sum(),
+                            activa=0)
+
 
     def actualiza_todo_sesion(self, xls_name, session_num, type_xls='MAYRA', bd_update=False):
+
+        if session_num == 1:
+            self.fecha_sesion = self.fecha_grupo
+        else:
+            self.fecha_sesion = self.fecha_sesion + relativedelta(months=1)
 
         #dict_users = qc.get_socios_grupo(self.id_grupo)
         #print(dict_users)
@@ -1009,14 +1031,16 @@ class CAF_DB_Monitor():
         self.actualiza_pago_prestamos(dict_session['ABONO'])
 
         self.limite_credito_socios = self.calcular_limite_credito()
+
+        self.actualiza_pago_multas(dict_session['PAGO_MULTA'])
         
         self.actualiza_prestamos(dict_session['PRÉSTAMO'], self.sesiones)
         
-        self.actualiza_pago_multas(dict_session['PAGO_MULTA'])
-
         self.actualiza_acciones(dict_session['RETIRO_ACCIONES'], self.acuerdos['Costo_acciones'], tipo='RETIRO_ACCIONES')
 
         self.calcula_ganancias(self.sesiones)
+
+        self.ganancias_acum = self.acumular_ganancias()
 
         if bd_update:
 
@@ -1042,11 +1066,8 @@ class CAF_DB_Monitor():
 
             qc.update_socio_acciones(self.socios_acciones[config.columnas_socio_accion].to_dict('records'))
 
-            this_sesion = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Sesion_id']
-            qc.update_sesion(sesion_id=this_sesion, caja=self.caja, 
-                             acciones=self.socios_acciones['Acciones'].sum(),
-                             ganancias=self.ganancias['Monto_ganancia'].sum(),
-                             activa=0)
+            self.prepare_update_sesion()
+
 
 
 

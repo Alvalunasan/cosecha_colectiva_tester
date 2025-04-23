@@ -155,6 +155,13 @@ def get_socio(username):
     socio = (cosecha_db.Socios & query).fetch('KEY', as_dict=True)
     return socio
 
+def get_socios_from_CURP_list(curp_list):
+
+    query = 'CURP IN ("' + '", "'.join(curp_list) + '")'
+
+    socio = (cosecha_db.Socios & query).fetch('KEY','CURP', as_dict=True)
+    return socio
+
 def get_socios_grupo(id_grupo, as_orderded_dict=True):
 
     socio_id_list = (cosecha_db.GrupoSocio & "Grupo_id ="+str(id_grupo)).fetch('Socio_id', order_by='Socio_id', as_dict=True)
@@ -228,10 +235,11 @@ def get_grupo_id_by_name(group_name):
         print(grupo_id)
         raise Exception('Mas de 1 grupo con el mismo nombre')
     elif len(grupo_id) == 0:
+        return [0, False]
         raise Exception('No hay grupo con el nombre')
     else:
         grupo_id = grupo_id[0]['Grupo_id']
-        return grupo_id
+        return [grupo_id, True]
     
 def restart_grupo_acciones(id_grupo, desde_sesion_0=False):
 
@@ -457,6 +465,54 @@ def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion
 
     if  solo_sesiones: 
         restart_grupo_acciones(id_grupo, desde_sesion_0)
+
+def insert_grupo(grupo_data):
+
+    (cosecha_db.Grupos).insert(grupo_data)
+    time.sleep(0.1)
+    grupo_id = cosecha_db.Grupos.fetch('KEY', order_by='Grupo_id desc', limit=1)
+    return grupo_id[0]
+
+
+def prepare_insert_socio_grupo(xls_name, id_grupo):
+
+    socios_xls = pd.DataFrame(ms.get_dict_usuarios_xls(xls_name))
+    curp_list = socios_xls['CURP'].to_list()
+
+    order_socios = socios_xls['CURP'].to_frame().reset_index()
+    order_socios = order_socios.rename(columns={'index': 'xls_order'})
+
+    socios_bd = pd.DataFrame(get_socios_from_CURP_list(curp_list))
+
+    aux_df = pd.merge(left=socios_bd, right=order_socios, on='CURP', how='inner')
+    aux_df = aux_df.sort_values(by='xls_order')
+    aux_df = aux_df.reset_index(drop=True)
+
+    aux_df['Tipo_socio'] = "SOCIO"
+    aux_df.loc[0,'Tipo_socio'] = "ADMIN"
+    aux_df.loc[1,'Tipo_socio'] = "SUPLENTE"
+
+    aux_df['Status'] = 1
+    aux_df['Acciones'] = 0
+    aux_df['Grupo_id'] = id_grupo
+    aux_df['Grupo_socio_id'] = 0
+
+    aux_df = aux_df[config.columnas_socio_accion]
+    aux_df = aux_df.drop('Grupo_socio_id', axis=1)
+
+    insert_grupo_socio(aux_df.to_dict('records'))
+
+    return aux_df
+
+def insert_grupo_socio(grupo_socio_data):
+
+    (cosecha_db.GrupoSocio).insert(grupo_socio_data)
+    time.sleep(0.1)
+
+def insert_acuerdos(acuerdos_data):
+
+    (cosecha_db.Acuerdos).insert1(acuerdos_data)
+    time.sleep(0.1)
 
 
 def insert_sesion(sesion_data):

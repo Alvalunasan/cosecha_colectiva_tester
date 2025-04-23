@@ -14,6 +14,7 @@ def read_caf_excel_sheet_old(filename, sheet_type):
 def read_caf_excel_sheet(filename, sheet_type):
 
     filename = filename.stem
+
     #filename = filename.replace('.xlsx','')
     id = config.dict_file_name_sheets_id[filename]
 
@@ -30,18 +31,18 @@ def read_caf_excel_sheet(filename, sheet_type):
 
 def get_dict_usuarios_xls(xls_name):
 
-    xls_filename = pathlib.Path(config.xls_dir, xls_name)
+    #xls_filename = pathlib.Path(config.xls_dir, xls_name)
 
-    df_grupo = read_caf_excel_sheet(xls_filename, "Usuarios")
+    df_grupo = read_caf_excel_sheet(pathlib.Path(xls_name), "Usuarios")
     dict_df_grupo = df_grupo.to_dict(orient='records')
 
     return dict_df_grupo
 
 def get_dict_acuerdos_xls(xls_name, idx_acuerdos=0):
 
-    xls_filename = pathlib.Path(config.xls_dir, xls_name)
+    #xls_filename = pathlib.Path(config.xls_dir, xls_name)
 
-    df_acuerdos = read_caf_excel_sheet(xls_filename, "Acuerdos")
+    df_acuerdos = read_caf_excel_sheet(pathlib.Path(xls_name), "Acuerdos")
     dict_df_acuerdos= df_acuerdos.to_dict(orient='records')
     dict_df_acuerdos = dict_df_acuerdos[idx_acuerdos]
 
@@ -129,7 +130,7 @@ def read_transform_info_xls(xls_name, session_num, dict_users, type_xls='MAYRA',
 
     dict_session = get_session_info_xls(xls_name, session_num, type_xls=type_xls, hoja=hoja)
     dict_session = insert_id_users_dict_session(dict_session, dict_users)
-    print(dict_session)
+
     if type_xls != 'MAYRA':
         new_dict_sesison = dict()
         for dict_part in dict_session.keys():

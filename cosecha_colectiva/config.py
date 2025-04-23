@@ -35,6 +35,7 @@ log_dir = pathlib.Path(pathlib.Path(current_dir).parent.absolute(),'logs')
 
 xls_types = {
     'Usuarios': {"Fecha_nac": "str", "CP": "str", "Telefono": "str", "Password": "str"},
+    'Grupo': str,
     'Acuerdos': str,
     'Hoja1': str,
     'EstadisticaInicial': str
@@ -42,6 +43,7 @@ xls_types = {
 xls_headers = {
     'Usuarios': 0,
     'Acuerdos': 0,
+    'Grupo': 0,
     'Hoja1': None,
     'EstadisticaInicial': None
 }
@@ -193,6 +195,16 @@ dict_file_name_sheets_id = {
   'CAF_GrupoAstronomo': '1SvXHIPjpFJTOisxbnywv7q2oR7JuEh_McBsJhX44tQg',
   'CAF_GrupoAstronomo': '1SvXHIPjpFJTOisxbnywv7q2oR7JuEh_McBsJhX44tQg',
   'Alcancía Viva': '1j_5iiWZc4_mJQrLkkCJ_RPNnRtQmltkG4xLQCEfGPPE',
+  'Alcancía Viva Test': '10nsHasjnFOfJU91gDpGVzU3CrmwAYoKuwg7w1ztbJwY',
+  'Licenciados_Asociados': '1wT3AM5PicaYV2Xb0zhAsuiIcNq1z8fDgJXHB1dM4vgI',
+  'Licenciados_Asociados_Test': '19J_mY3CTbAaGw0UsvJjmzFb4ogwovV0SPRsu_yAr29M',
+  'Tropa Gusgones_2.0': '1Id_SdXxQAazStVcml8r6xOYSrhJlCmpQ3zkD_fPuv80',
+  'Tropa Gusgones_2.0_Test': '1RN8X5oGUfySW-vj2MTOn2PTWQNTCBLKIW8Tg1SbcqEA',
+  'Verde_Futuro': '1cmgpC1G2CMQQ7GBmhH2ysBYwB7IUOYafjxMXuysNGgM',
+  'Verde_Futuro_Test': '1c9yXCTfw2XYm0mZn_0QGACEsad6zuZR0C6tIF9xABjg',
+  'Juntas_ahorramos': '1FoyLFtCozhO3OAuPuhQAB5XntdOkLdaiaQdD1wZkX-g',
+  'Juntes_ahorramos': '1vzxtidvPzXJlf1gElEKhbPkVpCY5IUUni1oPGMgeK0U',
+  'Juntos_ahorramos': '1bL90wDGK8__iapMrMR1FrbFlh8ex0lnlc2FNNCw7IvY'
 }
 
 tipo_xls_catalogo_bd = {
