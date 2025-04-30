@@ -1,4 +1,7 @@
 
+
+
+
 select 
 
 g.nombre_grupo,
@@ -11,6 +14,9 @@ sum(s.ganancias) OVER ( partition by g.grupo_id order by s.sesion_id) AS gancias
 
 s.caja - LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS entradas_menos_salidas_sesion,
 s.acciones - LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS acciones_sesion,
+
+ifnull(sesion_transacciones.sum_pago_multas,0) + ifnull(sesion_transacciones.sum_monto_abono_interes,0) - ifnull(sesion_ganancias.sum_ganancias,0) as diff_ganancias_ga_vs_transaccion,
+ifnull(s.ganancias,0) - ifnull(sesion_ganancias.sum_ganancias,0) as diff_ganancias_ga_vs_sesion,
 
 sesion_prestamos.*,
 sesion_multas.*,
@@ -145,6 +151,14 @@ where g.datos_dashboard = 1
 
 
 order by s.grupo_id, s.sesion_id
+
+
+
+
+
+
+
+
 
 
 
