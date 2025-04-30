@@ -4,9 +4,14 @@ select
 g.nombre_grupo,
 g.grupo_id,
 s.*,
-LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS 'caja_previa',
-LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS 'acciones_previas',
-LAG( s.ganancias, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS 'gancias_previas',
+case when TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) > 120 or  TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) < 4 then null else TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) end  as duracion_sesion_aprox, 
+LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS caja_previa,
+LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS acciones_previas,
+sum(s.ganancias) OVER ( partition by g.grupo_id order by s.sesion_id) AS gancias_acumuladas,
+
+s.caja - LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS entradas_menos_salidas_sesion,
+s.acciones - LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS acciones_sesion,
+
 sesion_prestamos.*,
 sesion_multas.*,
 sesion_asistencias.*,
@@ -140,3 +145,7 @@ where g.datos_dashboard = 1
 
 
 order by s.grupo_id, s.sesion_id
+
+
+
+
