@@ -1,5 +1,6 @@
 
 
+
 select 
 
 g.nombre_grupo,
@@ -114,6 +115,7 @@ select
 
 ga.sesion_id as sesion_id_ganancias,
 sum(ga.Monto_ganancia) as sum_ganancias,
+sum(case when ga.entregada = 1 then ga.Monto_ganancia else 0 end) as sum_ganancias_entregadas,
 count(ga.ganancias_id) as num_ganancias
 
 from railway.ganancias ga
@@ -149,10 +151,8 @@ where g.datos_dashboard = 1
 
 order by s.grupo_id, s.sesion_id
 
+union 
 
+select 
 
-
-
-
-
-
+* from old_sesiones_stats_dashboard

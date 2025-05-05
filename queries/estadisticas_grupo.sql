@@ -193,11 +193,11 @@ sum(case when catalogo_id = 'ABONO_PRESTAMO' then cantidad_movimiento else 0 end
 sum(case when catalogo_id = 'ABONO_PRESTAMO' then 1 else 0 end) as count_abonos_prestamos,
 sum(case when catalogo_id = 'COMPRA_ACCION' then cantidad_movimiento else 0 end) as sum_compra_acciones,
 sum(case when catalogo_id = 'COMPRA_ACCION' then 1 else 0 end) as count_compra_acciones,
-sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then cantidad_movimiento else 0 end) as sum_entrega_prestamos,
+sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then -1*cantidad_movimiento else 0 end) as sum_entrega_prestamos,
 sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then 1 else 0 end) as count_entrega_prestamos,
 sum(case when catalogo_id = 'PAGO_MULTA' then cantidad_movimiento else 0 end) as sum_pago_multas,
 sum(case when catalogo_id = 'PAGO_MULTA' then 1 else 0 end) as count_pago_multas,
-sum(case when catalogo_id = 'RETIRO_ACCION' then cantidad_movimiento else 0 end) as sum_retiro_acciones,
+sum(case when catalogo_id = 'RETIRO_ACCION' then -1*cantidad_movimiento else 0 end) as sum_retiro_acciones,
 sum(case when catalogo_id = 'RETIRO_ACCION' then 1 else 0 end) as count_retiro_acciones
 
 
@@ -216,3 +216,7 @@ on grupo_transacciones.grupo_id_transacciones = g.Grupo_id
 where g.datos_dashboard = 1
 
 group by g.Grupo_id
+
+
+UNION 
+select * from old_grupos_stats_dashboard 

@@ -213,3 +213,8 @@ tipo_xls_catalogo_bd = {
     'RETIRO_ACCIONES': 'RETIRO_ACCION',
     'PRÉSTAMO': 'ENTREGA_PRESTAMO'
 }
+
+list_viejos_grupos_sheets_id = [
+'1J27LD66BBIBqgFAujwDV-JHYFka0HkBtJDbJPN7NhT0',
+'1-o59UiON2JLdxRyxzzUqCGYaw5whz1OO0u_gdnbPGqI'
+]

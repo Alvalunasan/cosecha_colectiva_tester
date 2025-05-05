@@ -28,6 +28,17 @@ def read_caf_excel_sheet(filename, sheet_type):
                   )
     return df_data
 
+def read_excel_sheet_by_id(sheet_id, sheet_name):
+
+    base_url = 'https://docs.google.com/spreadsheets/d/'
+    suffix = '/export?format=xlsx'
+    url = base_url+sheet_id+suffix
+
+    df_data = pd.read_excel(url,
+                          sheet_name=sheet_name,
+                  )
+    return df_data
+
 
 def get_dict_usuarios_xls(xls_name):
 
