@@ -1,14 +1,17 @@
 
-
-
 select 
 
 g.nombre_grupo,
+rank() OVER ( partition by g.grupo_id order by s.sesion_id) AS num_sesion,
 s.*,
 case when TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) > 120 or  TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) < 4 then null else TIMESTAMPDIFF(MINUTE, s.created_at, sesion_transacciones.ultima_transaccion) end  as duracion_sesion_aprox, 
 LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS caja_previa,
 LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS acciones_previas,
 sum(s.ganancias) OVER ( partition by g.grupo_id order by s.sesion_id) AS gancias_acumuladas,
+
+sum(sesion_prestamos.sum_monto_prestamo) OVER ( partition by g.grupo_id order by s.sesion_id) AS prestamos_acum,
+sum(sesion_transacciones.sum_compra_acciones) OVER ( partition by g.grupo_id order by s.sesion_id) AS ahorro_acum,
+
 
 s.caja - LAG( s.caja, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS entradas_menos_salidas_sesion,
 s.acciones - LAG( s.acciones, 1, 0 ) OVER ( partition by g.grupo_id order by s.sesion_id) AS acciones_sesion,
@@ -86,14 +89,14 @@ sum(case when catalogo_id = 'ABONO_PRESTAMO' then cantidad_movimiento else 0 end
 sum(case when catalogo_id = 'ABONO_PRESTAMO' then 1 else 0 end) as count_abonos_prestamos,
 sum(case when catalogo_id = 'COMPRA_ACCION' then cantidad_movimiento else 0 end) as sum_compra_acciones,
 sum(case when catalogo_id = 'COMPRA_ACCION' then 1 else 0 end) as count_compra_acciones,
-sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then cantidad_movimiento else 0 end) as sum_entrega_prestamos,
+sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then -1*cantidad_movimiento else 0 end) as sum_entrega_prestamos,
 sum(case when catalogo_id = 'ENTREGA_PRESTAMO' then 1 else 0 end) as count_entrega_prestamos,
 sum(case when catalogo_id = 'PAGO_MULTA' then cantidad_movimiento else 0 end) as sum_pago_multas,
 sum(case when catalogo_id = 'PAGO_MULTA' then 1 else 0 end) as count_pago_multas,
-sum(case when catalogo_id = 'RETIRO_ACCION' then cantidad_movimiento else 0 end) as sum_retiro_acciones,
+sum(case when catalogo_id = 'RETIRO_ACCION' then -1*cantidad_movimiento else 0 end) as sum_retiro_acciones,
 sum(case when catalogo_id = 'RETIRO_ACCION' then 1 else 0 end) as count_retiro_acciones,
 sum(case when catalogo_id in ('ABONO_PRESTAMO', 'COMPRA_ACCION', 'PAGO_MULTA') then cantidad_movimiento else 0 end) as sum_entradas,
-sum(case when catalogo_id in ('RETIRO_ACCION', 'ENTREGA_PRESTAMO') then cantidad_movimiento else 0 end) as sum_salidas,
+sum(case when catalogo_id in ('RETIRO_ACCION', 'ENTREGA_PRESTAMO') then -1*cantidad_movimiento else 0 end) as sum_salidas,
 sum(tp.monto_abono_prestamo) as sum_monto_abono_prestamo,
 sum(tp.monto_abono_interes) as sum_monto_abono_interes,
 max(timestamp) as ultima_transaccion
@@ -149,10 +152,13 @@ on g.grupo_id = s.grupo_id
 where g.datos_dashboard = 1
 
 
-order by s.grupo_id, s.sesion_id
 
 union 
 
 select 
 
 * from old_sesiones_stats_dashboard
+
+
+order by grupo_id, sesion_id
+

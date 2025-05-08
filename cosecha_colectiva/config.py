@@ -204,7 +204,8 @@ dict_file_name_sheets_id = {
   'Verde_Futuro_Test': '1c9yXCTfw2XYm0mZn_0QGACEsad6zuZR0C6tIF9xABjg',
   'Juntas_ahorramos': '1FoyLFtCozhO3OAuPuhQAB5XntdOkLdaiaQdD1wZkX-g',
   'Juntes_ahorramos': '1vzxtidvPzXJlf1gElEKhbPkVpCY5IUUni1oPGMgeK0U',
-  'Juntos_ahorramos': '1bL90wDGK8__iapMrMR1FrbFlh8ex0lnlc2FNNCw7IvY'
+  'Juntos_ahorramos': '1bL90wDGK8__iapMrMR1FrbFlh8ex0lnlc2FNNCw7IvY',
+  'Procoseq': '11lSzrH-cOJ1ru5--GHE2M2dq-2mLzhh_n02jgObvMW0'
 }
 
 tipo_xls_catalogo_bd = {
@@ -216,5 +217,6 @@ tipo_xls_catalogo_bd = {
 
 list_viejos_grupos_sheets_id = [
 '1J27LD66BBIBqgFAujwDV-JHYFka0HkBtJDbJPN7NhT0',
-'1-o59UiON2JLdxRyxzzUqCGYaw5whz1OO0u_gdnbPGqI'
+'1cUQrMn8Ab29CM4369D6QdJ71Fsc-mXwGPmk6RX64rv8',
+
 ]
