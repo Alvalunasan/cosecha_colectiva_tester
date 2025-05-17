@@ -1,4 +1,6 @@
 
+
+
 WITH grupo_sesion AS
   (
 select 
@@ -37,7 +39,8 @@ grupo_ganancias.*,
 max(grupo_acuerdos.tasa_interes) as tasa_interes,
 max(grupo_acuerdos.limite_credito) as limite_credito,
 grupo_sesion_stats.num_sesiones as num_sesiones,
-grupo_transacciones.*
+grupo_transacciones.*,
+max(gc.Color_grupo) as color_grupo
 
 from railway.grupos g
 
@@ -211,7 +214,8 @@ group by grupo_sesion.grupo_id
 ) grupo_transacciones
 on grupo_transacciones.grupo_id_transacciones = g.Grupo_id
 
-
+left join grupos_colores gc
+on gc.grupo_id = g.grupo_id
 
 where g.datos_dashboard = 1
 
@@ -219,4 +223,16 @@ group by g.Grupo_id
 
 
 UNION 
-select * from old_grupos_stats_dashboard 
+
+
+(
+select 
+
+ogsd.*,
+gc.Color_grupo
+
+from old_grupos_stats_dashboard  ogsd
+
+left join grupos_colores gc
+on gc.grupo_id = ogsd.grupo_id
+)

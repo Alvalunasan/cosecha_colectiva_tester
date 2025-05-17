@@ -1,4 +1,6 @@
 
+
+
 WITH grupo_sesion AS
   (
 select 
@@ -18,7 +20,7 @@ select
 
 socio_grupo.grupo_id,
 socio_grupo.Nombre_grupo,
-concat('Socio ', rank() OVER ( partition by socio_grupo.grupo_id order by socio_grupo.socio_id), ' ',socio_grupo.nombre_grupo) AS num_socio_grupo,
+concat('Socio ', rank() OVER ( partition by socio_grupo.grupo_id order by socio_grupo.socio_id)) AS num_socio_grupo,
 s.socio_id,
 s.nombres,
 s.apellidos,
@@ -62,7 +64,8 @@ case when sum(socio_transacciones.sum_compra_acciones) > 0 then socio_prestamos.
 socio_multas.*,
 socio_asistencias.*,
 socio_ganancias.*,
-socio_transacciones.*
+socio_transacciones.*,
+gc.Color_grupo as color_grupo
 
 
 from railway.socios s
@@ -208,15 +211,28 @@ from railway.transacciones t
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = t.Sesion_id
 
+
 group by grupo_sesion.grupo_id, t.socio_id
 ) socio_transacciones
 on socio_transacciones.grupo_id_transacciones = socio_grupo.Grupo_id
 and socio_transacciones.socio_id_transacciones = s.socio_id
 
+left join grupos_colores gc
+on gc.grupo_id = socio_grupo.Grupo_id
 
 group by socio_grupo.grupo_id, socio_grupo.socio_id
 
 
 union
 
-select * from old_socios_stats_dashboard ossd 
+(
+select 
+
+ossd.*,
+gc.Color_grupo
+
+from old_socios_stats_dashboard  ossd
+
+left join grupos_colores gc
+on gc.grupo_id = ossd.grupo_id
+)

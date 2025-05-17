@@ -24,7 +24,8 @@ sesion_multas.*,
 sesion_asistencias.*,
 sesion_transacciones.*,
 sesion_ganancias.*,
-sesion_interes_prestamo.*
+sesion_interes_prestamo.*,
+gc.Color_grupo as color_grupo
 
 from railway.sesiones s
 
@@ -149,16 +150,24 @@ on  sesion_interes_prestamo.sesion_id_interes_prestamo = s.sesion_id
 inner join grupos g
 on g.grupo_id = s.grupo_id
 
+left join grupos_colores gc
+on gc.grupo_id = s.grupo_id
+
 where g.datos_dashboard = 1
 
 
 
-union 
+UNION 
 
+
+(
 select 
 
-* from old_sesiones_stats_dashboard
+ossd.*,
+gc.Color_grupo
 
+from old_sesiones_stats_dashboard  ossd
 
-order by grupo_id, sesion_id
-
+left join grupos_colores gc
+on gc.grupo_id = ossd.grupo_id
+)
