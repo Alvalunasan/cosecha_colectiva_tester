@@ -11,4 +11,6 @@ xls_grupos/Original_XLS/
 
 cosecha_colectiva/__pycache__/*
 
+*.egg-info
+
 *.pyc

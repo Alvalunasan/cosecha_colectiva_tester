@@ -205,7 +205,9 @@ dict_file_name_sheets_id = {
   'Juntas_ahorramos': '1FoyLFtCozhO3OAuPuhQAB5XntdOkLdaiaQdD1wZkX-g',
   'Juntes_ahorramos': '1vzxtidvPzXJlf1gElEKhbPkVpCY5IUUni1oPGMgeK0U',
   'Juntos_ahorramos': '1bL90wDGK8__iapMrMR1FrbFlh8ex0lnlc2FNNCw7IvY',
-  'Procoseq': '11lSzrH-cOJ1ru5--GHE2M2dq-2mLzhh_n02jgObvMW0'
+  'Procoseq': '11lSzrH-cOJ1ru5--GHE2M2dq-2mLzhh_n02jgObvMW0',
+  'CAFAM': '1Fz-4xSiklTlW3m7SMf0Z-bZLbdyys3XcUUgxf5WMrzo',
+  'La Colmena': '1WNT4gL6yfZb6z0kgJo0GknV7ZRZxE6H6ThdK_pGssXc'
 }
 
 tipo_xls_catalogo_bd = {

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CAFAPP_tester"
+version = '1.0.0'
+description = "Environment for CAFAP tester tools"
+readme = "README.md"
+
+
+dependencies = [
+    "datajoint",
+    "pandas",
+    "jupyterlab",
+    "matplotlib",
+    "requests",
+    "pathlib",
+    "certifi",
+    "openpyxl",
+]
+requires-python = ">=3.13"

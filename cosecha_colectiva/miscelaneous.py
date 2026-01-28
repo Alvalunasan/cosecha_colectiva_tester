@@ -109,7 +109,7 @@ def get_specific_session_info(df_sesion, session_part, session_num):
 
 def fill_list(value_fill, size_list, default_value):
 
-    if pd.isna(value_fill):
+    if not isinstance(value_fill, list) and pd.isna(value_fill):
         return [default_value] * size_list
     if len(value_fill) < size_list:
         missing = size_list - len(value_fill)

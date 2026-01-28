@@ -90,6 +90,7 @@ class CAF_API_group_creation_tester():
         for user in dict_df_grupo:
 
             user_in_db = qc.get_socio(user['Username'])
+            print('user_in_db', user_in_db)
 
             if user_in_db:
                 logging.info('Usuario ya existe: %s', user_in_db)
@@ -97,11 +98,15 @@ class CAF_API_group_creation_tester():
 
             payload = json.dumps(user)
             time.sleep(0.1) 
+            print("config.url_dict['url_socio']")
+            print(config.url_dict['url_socio'])
+            print('payload')
+            print(payload)
             response = requests.request("POST", config.url_dict['url_socio'], headers=config.default_headers, data=payload)
 
-            #if not response:
-            #    logging.error('%s', response.text)
-            #    raise Exception('No se pudo crear el usuario ')
+            if not response:
+                logging.error('%s', response.text)
+                raise Exception('No se pudo crear el usuario ')
 
     
     @staticmethod

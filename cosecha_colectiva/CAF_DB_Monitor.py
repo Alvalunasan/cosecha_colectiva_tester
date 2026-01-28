@@ -345,7 +345,7 @@ class CAF_DB_Monitor():
 
             self.caja = self.caja + multas_activas.loc[multas_activas['Pago_en_sesion'] == 1, 'Monto_multa'].sum()
 
-    def actualiza_prestamos(self, df_prestamos, sesion_list):
+    def actualiza_prestamos(self, df_prestamos, sesion_list, unique_session_to_update=False):
 
         if df_prestamos.shape[0] > 0:
 
@@ -419,7 +419,7 @@ class CAF_DB_Monitor():
                     self.prestamos.loc[self.prestamos.shape[0]] = series_prestamo
                     self.caja = self.caja - (monto_pedir - debe_total)
             
-            if self.caja < 0:
+            if self.caja < 0 and not unique_session_to_update:
                 raise Exception('No hay suficiente dinero en caja para préstamo')
     
     def crea_nuevo_prestamo(self, monto, ampliacion, num_sesiones, socio, sesion, prestamo_original=None):
@@ -566,7 +566,29 @@ class CAF_DB_Monitor():
 
         self.ganancias = self.ganancias.reset_index(drop=True)
 
+    def suma_ganancias_pasado(self, df_ganacias, sessions):
+
+        if df_ganacias.shape[0] > 0:
+
+            df_ganacias = df_ganacias.reset_index()
+            df_ganacias = df_ganacias.explode(['GANANCIAS'])
+
+            df_ganacias= df_ganacias.rename(columns={'index':'Socio_id'}) 
+
+            df_ganacias['Sesion_id'] = sessions[-1]['Sesion_id']
+
+            self.ganancias = pd.merge(left=self.ganancias, right=df_ganacias,
+                                      on=['Socio_id', 'Sesion_id'], how='left')
+            
+            self.ganancias['GANANCIAS'] = self.ganancias['GANANCIAS'].astype(float)
+            self.ganancias['GANANCIAS'].fillna(0, inplace=True)
+
+            self.ganancias['Monto_ganancia'] = self.ganancias['Monto_ganancia'] + self.ganancias['GANANCIAS']
+
+            self.ganancias = self.ganancias.drop(columns=['GANANCIAS'])
         
+            self.ganancias = self.ganancias.reset_index(drop=True)
+
 
     def actualiza_sesiones(self, bd_update=False):
 
@@ -901,7 +923,10 @@ class CAF_DB_Monitor():
             transaccion_prestamos_ids = qc.insert_transaccion_prestamo(pago_prestamo_now_dict)
             pago_prestamo_now['Transaccion_prestamo_id'] = transaccion_prestamos_ids['Transaccion_prestamo_id']
 
-            self.transacciones_prestamo_bd = pd.concat([self.transacciones_prestamo_bd, pago_prestamo_now], axis=0, ignore_index=True)
+            if self.transacciones_prestamo_bd.shape[0] > 0:
+                self.transacciones_prestamo_bd = pd.concat([self.transacciones_prestamo_bd, pago_prestamo_now], axis=0, ignore_index=True)
+            else:
+                self.transacciones_prestamo_bd = pago_prestamo_now.copy()
 
 
     def prepare_insert_interes_prestamo(self):
@@ -1000,7 +1025,7 @@ class CAF_DB_Monitor():
                             activa=0)
 
 
-    def actualiza_todo_sesion(self, xls_name, session_num, type_xls='MAYRA', bd_update=False):
+    def actualiza_todo_sesion(self, xls_name, session_num, type_xls='MAYRA', bd_update=False, unique_session_to_update=False):
 
         if session_num == 1:
             self.fecha_sesion = self.fecha_grupo
@@ -1034,11 +1059,17 @@ class CAF_DB_Monitor():
 
         self.actualiza_pago_multas(dict_session['PAGO_MULTA'])
         
-        self.actualiza_prestamos(dict_session['PRÉSTAMO'], self.sesiones)
+        self.actualiza_prestamos(dict_session['PRÉSTAMO'], self.sesiones, unique_session_to_update)
+
+        if unique_session_to_update:
+            self.actualiza_pago_prestamos(dict_session['ABONO'])
         
         self.actualiza_acciones(dict_session['RETIRO_ACCIONES'], self.acuerdos['Costo_acciones'], tipo='RETIRO_ACCIONES')
 
         self.calcula_ganancias(self.sesiones)
+
+        self.suma_ganancias_pasado(dict_session['GANANCIAS'],self.sesiones)
+
 
         self.ganancias_acum = self.acumular_ganancias()
 

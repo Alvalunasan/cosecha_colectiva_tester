@@ -389,7 +389,7 @@ def suma_abonos(df_abono):
 
     return abono
 
-def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion_0=False):
+def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion_0=False, conservar_acuerdos=False):
 
     base_query = 'DELETE from ' + config.db_name + '.'
 
@@ -414,12 +414,10 @@ def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion
     if solo_sesiones and not desde_sesion_0:
         sesiones = sesiones[1:]
 
-    acuerdos_del = acuerdos
-
-    if len(acuerdos) > 1 and solo_sesiones:
-            acuerdos_del = acuerdos[1:]
-    if len(acuerdos) == 1 and solo_sesiones:
-            acuerdos_del = []
+    if conservar_acuerdos:
+        acuerdos_del = []
+    else:
+        acuerdos_del = acuerdos
 
     asistencias = (cosecha_db.Asistencias & sesiones).fetch('KEY', as_dict=True)
     prestamos = (cosecha_db.Prestamos & sesiones).fetch('KEY', as_dict=True)
@@ -499,6 +497,8 @@ def prepare_insert_socio_grupo(xls_name, id_grupo):
 
     aux_df = aux_df[config.columnas_socio_accion]
     aux_df = aux_df.drop('Grupo_socio_id', axis=1)
+
+    print(aux_df)
 
     insert_grupo_socio(aux_df.to_dict('records'))
 
