@@ -187,7 +187,7 @@ class CAF_DB_Monitor():
             self.prestamos['interes_futuro'] =\
                 self.prestamos.apply(lambda x: self.calcula_interes_futuro(x), axis=1)
             
-            self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 1, config.columnas_extras_prestamo] = 0
+            self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 1, config.columnas_extras_prestamo] = 0.0
 
 
     def actualiza_acciones(self, df_acciones, costo_accion, tipo='COMPRA_ACCIONES'):
@@ -237,7 +237,7 @@ class CAF_DB_Monitor():
             #else:
             #    next_interes_prestamo_id = self.interes_prestamo['Interes_prestamo_id'].max() + 1
 
-            interes_prestamo_sesion = self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), ['Prestamo_id', 'interes_futuro', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()
+            interes_prestamo_sesion = self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), ['Prestamo_id', 'interes_futuro', 'Estatus_ampliacion', 'Sesiones_restantes']].copy()            
             interes_prestamo_sesion = interes_prestamo_sesion.sort_values(by=['Prestamo_id'], ascending=[False])
             interes_prestamo_sesion['Sesion_id'] = sesion_id
             interes_prestamo_sesion['Interes_prestamo_id'] = range(next_interes_prestamo_id, next_interes_prestamo_id + interes_prestamo_sesion.shape[0]*1,1)
@@ -261,7 +261,6 @@ class CAF_DB_Monitor():
             self.prestamos['Prestamo_id'] = self.prestamos['Prestamo_id'].astype(int)
             prestamos_activos = self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0]
             prestamo_id_df = prestamos_activos.groupby('Socio_id')['Prestamo_id'].apply(list).to_frame()
-
             df_abono.index.rename('Socio_id', inplace=True)
             df_abono = df_abono.join(prestamo_id_df, how='inner')
             df_abono = df_abono.explode(['ABONO', 'Prestamo_id'])
@@ -275,6 +274,7 @@ class CAF_DB_Monitor():
             #Revisa lo que sobró de abono del prestamo después del interés
             prestamos_activos['debe_interes'] = prestamos_activos['Interes_generado'] - prestamos_activos['Interes_pagado']
             prestamos_activos['sobrante_abono'] = prestamos_activos['ABONO'] - prestamos_activos['debe_interes']
+            prestamos_activos['sobrante_abono'] = prestamos_activos['sobrante_abono'].astype(float)
 
             #Si tiene más abono, lo suma al monto pagado e "iguala" el Interes pagado al interés generado
             prestamos_activos.loc[prestamos_activos['sobrante_abono'] >= 0, 'Monto_pagado'] =\
@@ -334,7 +334,7 @@ class CAF_DB_Monitor():
 
             multas_activas.loc[multas_activas['PAGO_MULTA'] == 1, 'Pago_en_sesion'] = 1
             multas_activas['PAGO_MULTA'] = multas_activas['PAGO_MULTA'].fillna(0)
-            multas_activas.loc[multas_activas['Pago_en_sesion'] == 1, 'Status'] = 1    
+            multas_activas.loc[multas_activas['Pago_en_sesion'] == 1, 'Status'] = 1
 
             # Elimina las columnas sobrantes de multas
             multas_activas = multas_activas.drop(['PAGO_MULTA'], axis=1)
@@ -384,6 +384,8 @@ class CAF_DB_Monitor():
                     logging.debug('El socio no puede pedir más prestamos %s', df_prestamos.loc[prestamo_idx, :])
                     continue
                 if limite_credito < monto_pedir:
+                    print('No puede pedir tanto xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+                    print(df_prestamos.loc[prestamo_idx, :])
                     logging.debug('El socio no tiene suficiente līmite de crédito para el préstamo %s', df_prestamos.loc[prestamo_idx, :])
                     continue
                 if not ampliacion:
@@ -538,16 +540,28 @@ class CAF_DB_Monitor():
 
         ganancias_totales_sesion = ganancias_prestamos + ganancias_multas
 
-        ganancias_sesion = self.socios_acciones.loc[self.socios_acciones['Status'] == 1, ['Acciones', 'Socio_id']].copy()
+        print('ganancias_totales_sesion')
+        print(ganancias_totales_sesion)
+
+        ganancias_sesion = self.socios_acciones.loc[(self.socios_acciones['Status'] == 1) & (self.socios_acciones['Acciones'] > 0),
+                                                    ['Acciones', 'Socio_id']].copy()
         ganancias_sesion = ganancias_sesion.sort_values(by='Acciones')
+        ganancias_sesion = ganancias_sesion.reset_index(drop=True)
 
         total_acciones = ganancias_sesion['Acciones'].sum()
 
         ganancias_sesion['Monto_ganancia_floor'] = np.floor(ganancias_sesion['Acciones']*ganancias_totales_sesion*2/total_acciones)/2
         ganancias_sesion['sobrante_Monto_ganancia'] = 0
+        ganancias_sesion['sobrante_Monto_ganancia'] = ganancias_sesion['sobrante_Monto_ganancia'].astype(float)
 
         ganancias_totales_floor = ganancias_sesion['Monto_ganancia_floor'].sum()
         sob_acciones = (ganancias_totales_sesion - ganancias_totales_floor)*2 
+
+        print('ganancias_totales_floor')
+        print(ganancias_totales_floor)
+
+        print('sob_acciones')
+        print(sob_acciones)
 
         if sob_acciones > 0:
             ganancias_sesion.loc[0:sob_acciones-1,'sobrante_Monto_ganancia'] = 0.5
@@ -558,6 +572,10 @@ class CAF_DB_Monitor():
         ganancias_sesion['Ganancias_id'] = range(last_id_ganancia, last_id_ganancia + ganancias_sesion.shape[0]*1,1)
         ganancias_sesion['Ganancia_accion'] = ganancias_totales_sesion/total_acciones
         ganancias_sesion['periodo'] = 'nuevo'
+
+        if ganancias_totales_floor > 0:
+            print('ganancias_sesion')
+            print(ganancias_sesion)
 
         self.ganancias_sesion = copy.deepcopy(ganancias_sesion)
         ganancias_sesion = ganancias_sesion.drop(['Monto_ganancia_floor', 'sobrante_Monto_ganancia', 'Acciones'], axis=1)

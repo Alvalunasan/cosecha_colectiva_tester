@@ -207,7 +207,10 @@ dict_file_name_sheets_id = {
   'Juntos_ahorramos': '1bL90wDGK8__iapMrMR1FrbFlh8ex0lnlc2FNNCw7IvY',
   'Procoseq': '11lSzrH-cOJ1ru5--GHE2M2dq-2mLzhh_n02jgObvMW0',
   'CAFAM': '1Fz-4xSiklTlW3m7SMf0Z-bZLbdyys3XcUUgxf5WMrzo',
-  'La Colmena': '1WNT4gL6yfZb6z0kgJo0GknV7ZRZxE6H6ThdK_pGssXc'
+  'La Colmena': '1WNT4gL6yfZb6z0kgJo0GknV7ZRZxE6H6ThdK_pGssXc',
+  'La Llave Beatriz': '1sTreMnia6Ez54uHMRUXgpgE4Um9gZbZzxKSBuLzJ1E4',
+  'Caja ahorro magueyeros': '1OR13miCG2O3Rc8gk-DgjVtmhxrmAV3w4EbHdJ3XSS4w',
+  'Caja la llave': '1WazkPgG1qg7MqXBNZjRNMqqsHsCpCI5PNJ-grs8wq1I'
 }
 
 tipo_xls_catalogo_bd = {

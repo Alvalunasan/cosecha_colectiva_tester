@@ -297,7 +297,8 @@ def get_prestamos_sesiones(sesiones_dict, id_grupo):
     prestamos = pd.DataFrame((cosecha_db.Prestamos * acuerdo_proj & sesiones_dict).fetch(*config.columnas_prestamos, as_dict=True))
 
     if prestamos.shape[0] > 0:
-        socios_df  = pd.DataFrame((cosecha_db.GrupoSocio.proj('Socio_id', Status='Status_socio') & ("Grupo_id="+str(id_grupo))).fetch(as_dict=True))
+        socios_df  = pd.DataFrame((cosecha_db.GrupoSocio.proj('Socio_id', 'Status') & ("Grupo_id="+str(id_grupo))).fetch(as_dict=True))
+        socios_df = socios_df.rename(columns={'Status':'Status_socio'})
         prestamos = pd.merge(prestamos, socios_df, how='inner', on='Socio_id')
 
     return prestamos
@@ -463,6 +464,55 @@ def delete_grupo(id_grupo, solo_sesiones=False, force_delete=False, desde_sesion
 
     if  solo_sesiones: 
         restart_grupo_acciones(id_grupo, desde_sesion_0)
+
+def delete_sesion(id_sesion, force_delete=False):
+
+    base_query = 'DELETE from ' + config.db_name + '.'
+
+    ordered_tablas_name = ['transaccion_prestamos', 'transacciones', 'interes_prestamo', 'ganancias',
+                'multas', 'prestamos', 'prestamos', 'asistencias', 'sesiones']
+    
+    sesion_q = dict()
+    sesion_q['Sesion_id'] = id_sesion
+
+    #Selecciona todas las sesiones
+    sesiones = (cosecha_db.Sesiones & sesion_q).fetch('KEY', order_by='Sesion_id', as_dict=True)
+
+    asistencias = (cosecha_db.Asistencias & sesiones).fetch('KEY', as_dict=True)
+    prestamos = (cosecha_db.Prestamos & sesiones).fetch('KEY', as_dict=True)
+
+    prestamos_ampliacion = (cosecha_db.Prestamos & sesiones & 'Prestamo_original_id IS NOT NULL').fetch('KEY', as_dict=True)
+
+    multas = (cosecha_db.Multas & sesiones).fetch('KEY', as_dict=True)
+    ganancias = (cosecha_db.Ganancias & sesiones).fetch('KEY', as_dict=True)
+    interes_prestamos = (cosecha_db.InteresPrestamo & sesiones).fetch('KEY', as_dict=True)
+    transactions = (cosecha_db.Transacciones & sesiones).fetch('KEY', as_dict=True)
+
+    transactions_prestamo = (cosecha_db.TransaccionPrestamos & transactions).fetch('KEY', as_dict=True)
+
+    lista_todo = [transactions_prestamo, transactions, interes_prestamos, ganancias, 
+                  multas, prestamos_ampliacion, prestamos, asistencias, sesiones]
+    
+
+    con = dj.conn()
+    cont = 0
+    for rubro in zip(lista_todo, ordered_tablas_name):
+        cont += 1
+        print(rubro)
+        if rubro[0]:
+            where_q = ms.transform_dict_query(rubro[0])
+            query = base_query + rubro[1] + ' WHERE ' + where_q
+            print(query)
+            if not force_delete:
+                time.sleep(0.1)
+                keyboard = input("Press Enter to continue, (c) Entrer to cancel")
+                if 'c' in keyboard:
+                    break
+
+            con.query(query)
+            time.sleep(0.1)
+
+    #TO DO Update acciones (restar compra de acciones de sesion)
 
 def insert_grupo(grupo_data):
 
