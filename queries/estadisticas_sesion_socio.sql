@@ -188,7 +188,7 @@ ga.sesion_id as sesion_id_ganancias,
 ga.socio_id as socio_id_ganancias,
 ga.Monto_ganancia as sum_ganancias,
 case when ga.entregada = 1 then ga.Monto_ganancia else 0 end as sum_ganancias_entregadas,
-1 as num_ganancias
+case when ga.entregada = 1 then 1 else 0 end as num_ganancias
 
 from railway.ganancias ga
 
