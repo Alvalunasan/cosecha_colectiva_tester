@@ -11,7 +11,7 @@ readme = "README.md"
 
 dependencies = [
     "datajoint",
-    "pandas",
+    "pandas<2.4",
     "jupyterlab",
     "matplotlib",
     "requests",

@@ -63,6 +63,7 @@ class CAF_DB_Monitor():
     def __init__(self, id_grupo, xls_name, starting_date=date.today()) -> None:
 
         self.fecha_grupo = starting_date
+        self.fecha_sesion = starting_date
 
         self.id_grupo = id_grupo
         self.acuerdos = pd.Series(qc.get_acuerdos_grupo(self.id_grupo))
@@ -351,17 +352,20 @@ class CAF_DB_Monitor():
 
             df_prestamos.index.name = 'Socio_id'
 
+            print('df_prestamos in actualiza prestamos')
+            print(df_prestamos)
+
             if self.prestamos.shape[0] > 0:
-                prestamo_id_df = self.prestamos.groupby('Socio_id')['Prestamo_id'].apply(list).to_frame()
-                df_prestamos = df_prestamos.join(prestamo_id_df, how='left')
- 
-                df_prestamos1 = df_prestamos.loc[df_prestamos['Prestamo_id'].isnull()]
-                if df_prestamos1.shape[0] > 0:
-                    df_prestamos1 = df_prestamos1.explode(['PRÉSTAMO', 'AMPLIACIÓN', 'NUM_SESIONES'])
-                df_prestamos2 = df_prestamos.loc[~df_prestamos['Prestamo_id'].isnull()]
-                if df_prestamos2.shape[0] > 0:
-                    df_prestamos2 = df_prestamos2.explode(['PRÉSTAMO', 'AMPLIACIÓN', 'NUM_SESIONES', 'Prestamo_id'])
-                df_prestamos = pd.concat([df_prestamos1, df_prestamos2])
+
+                df_prestamos = df_prestamos.explode(['PRÉSTAMO', 'AMPLIACIÓN', 'NUM_SESIONES'])
+                df_prestamos_para_ampliacion = df_prestamos.loc[df_prestamos['AMPLIACIÓN'] == 1, :]
+
+                if df_prestamos_para_ampliacion.shape[0] > 0:
+                    prestamos_activos = self.prestamos.loc[self.prestamos['Estatus_prestamo']==0,:]
+
+                else:
+                    df_prestamos['Prestamo_id'] = -100
+
             else:
                 df_prestamos = df_prestamos.explode(['PRÉSTAMO', 'AMPLIACIÓN', 'NUM_SESIONES'])
                 df_prestamos['Prestamo_id'] = -100
@@ -621,9 +625,15 @@ class CAF_DB_Monitor():
                 'created_at': datetime.strftime(self.fecha_sesion, '%Y-%m-%d')
             }
             if self.sesiones_bd.shape[0] == 0:
-                base_sesion['Caja'] = 0
-                base_sesion['Acciones'] = 0
-                base_sesion['Ganancias'] = 0
+                if len(self.sesiones) > 0:
+                    basic_data_sesion = qc.get_basic_data_sesion(int(self.sesiones[-1]['Sesion_id']))
+                    base_sesion['Caja'] = basic_data_sesion[0]['Caja']
+                    base_sesion['Acciones'] = basic_data_sesion[0]['Acciones']
+                    base_sesion['Ganancias'] = basic_data_sesion[0]['Ganancias']
+                else:
+                    base_sesion['Caja'] = 0
+                    base_sesion['Acciones'] = 0
+                    base_sesion['Ganancias'] = 0
             else:
                 base_sesion['Caja'] = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Caja']
                 base_sesion['Acciones'] = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Acciones']

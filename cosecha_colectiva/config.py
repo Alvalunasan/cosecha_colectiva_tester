@@ -135,7 +135,7 @@ bd_columnas_prestamo = ['Prestamo_id', 'Monto_prestamo', 'Monto_pagado', 'Intere
 
 columnas_prestamos = bd_columnas_prestamo + columnas_acuerdos_prestamo
 
-columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono', 'Status_socio']
+columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono']
 
 columnas_prestamos_final = columnas_prestamos + columnas_extras_prestamo
 
@@ -212,6 +212,7 @@ dict_file_name_sheets_id = {
   'Caja ahorro magueyeros': '1OR13miCG2O3Rc8gk-DgjVtmhxrmAV3w4EbHdJ3XSS4w',
   'Caja la llave': '1WazkPgG1qg7MqXBNZjRNMqqsHsCpCI5PNJ-grs8wq1I',
   'Agrosemilla sin varo': '1yj7-CIEKjFyz9KSTayRdVDVBggkdMOD3-tiDNj5UQ80',
+  'Caja llanitos Hidalgo': '1k_qWCRkdZoxZLeI5y0R3i2SYmD8uKMgFEtdCf4l6Sco',
 }
 
 tipo_xls_catalogo_bd = {

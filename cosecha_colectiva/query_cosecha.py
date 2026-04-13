@@ -267,6 +267,23 @@ def get_sesiones_grupo(id_grupo):
 
     return sesiones
 
+
+def get_last_fecha_sesion_grupo(id_grupo):
+
+    grupo_q = dict()
+    grupo_q['Grupo_id'] = id_grupo
+    sesiones = (cosecha_db.Sesiones & grupo_q).fetch('Fecha', order_by='Sesion_id desc', as_dict=True, limit=1)
+
+    return sesiones
+
+def get_basic_data_sesion(id_sesion):
+    
+    sesion_q = dict()
+    sesion_q['Sesion_id'] = id_sesion
+    info_sesion = (cosecha_db.Sesiones & sesion_q).fetch('Ganancias', 'Acciones', 'Caja', as_dict=True)
+
+    return info_sesion
+
 def get_caja_sesion(id_sesion):
     
     sesion_q = dict()
