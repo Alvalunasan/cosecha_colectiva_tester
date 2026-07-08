@@ -725,7 +725,7 @@ class CAF_DB_Monitor():
             return [status, dfs]
 
         ganancias = pd.DataFrame(qc.get_ganancias_sesiones(sesiones))
-        [status, dfs] = self.compara_dfs(ganancias, self.ganancias, 'ganancias', drop_columns=['Socio_id', 'Sesion_id', 'Ganancias_id'])
+        [status, dfs] = self.compara_dfs(ganancias, self.ganancias, 'ganancias', drop_columns=['Socio_id', 'Sesion_id', 'Ganancias_id', 'Ganancia_accion', 'periodo'])
         if not status:
             return [status, dfs]
         

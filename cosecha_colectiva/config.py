@@ -2,30 +2,68 @@
 import os
 import pathlib
 
-api_url = 'https://cosechacolectiva.herokuapp.com/api/'
+api_url = 'https://8jipefwkrc.execute-api.us-east-1.amazonaws.com'
 
 url_dict = {
-'url_socio': api_url+"socios",
-'url_login': api_url+"socios/login",
-'url_grupo': api_url+"grupos",
-'url_info_grupo': api_url+"grupos/{id_grupo}",
-'url_socio_grupo': api_url+ "socios/grupos",
-'url_acuerdos': api_url+"grupos/{id_grupo}/acuerdos",
-'url_crear_sesion': api_url+"grupos/{id_grupo}/sesiones",
-'url_finalizar_sesion': api_url+"grupos/{id_grupo}/sesiones/finalizar",
-'url_status_socio': api_url+"grupos/{id_grupo}/socios/{id_socio}/socios",
-'url_compra_acciones': api_url+"grupos/{id_grupo}/socios/{id_socio}/acciones",
-'url_retiro_acciones': api_url+"grupos/{id_grupo}/socios/{id_socio}/acciones/retirar",
-'url_crear_multa': api_url+"grupos/{id_grupo}/socios/{id_socio}/multas/",
-'url_pagar_multa': api_url+"grupos/{id_grupo}/multas/",
-'url_generar_prestamo': api_url+"grupos/{id_grupo}/socios/{id_socio}/prestamos/",
-'url_ampliar_prestamo': api_url+"grupos/{id_grupo}/socios/{id_socio}/prestamos/prestamos",
-'url_pagar_prestamo': api_url+"grupos/{id_grupo}/prestamos/"
+    'url_login': api_url+"/auth/login",
+    'url_login_restore': api_url+"/auth/restore_password",
+    'url_login_register': api_url+"/auth/register",
+    'url_groups_create':  api_url+"/groups",
+    'url_groups_join': api_url+"/groups/join",
+    'url_groups_deactivate_user': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/update_status",
+    'url_groups_delete_user': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/delete_user",
+    'url_groups_deposit_common_fund': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/deposit_to_common_fund",
+    'url_groups_retreat_common_fund': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/retreat_to_common_fund",
+    'url_groups_get_users': api_url+"/groups/{id_grupo}/users",
+    'url_groups_get_active_users': api_url+"/groups/{id_grupo}/users?status=active",
+    'url_groups_get_group': api_url+"/groups/{id_grupo}",
+    'url_groups_get_group_user_info': api_url+"/groups/{id_grupo}/users/{id_socio}",
+    'url_users_get_active_sessions': api_url+"/users/get_active_sessions",
+    'url_users_get_groups': api_url+"/users/groups",
+    'url_sessions_create': api_url+"/groups/{id_grupo}/sessions",
+    'url_sessions_share_profit': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/profit/share_profit",
+    'url_sessions_late_users': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/register_retardments",
+    'url_sessions_schedule_next': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/schedule",
+    'url_sessions_url_sign': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/sign",
+    'url_sessions_get_session': api_url+"/groups/{id_grupo}/sessions/{id_sesion}",
+    'url_sessions_get_summary': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/resume",
+    'url_sessions_get_active_session': api_url+"/groups/{id_grupo}/get_active_session",
+    'url_sessions_get_movements': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/movements",
+    'url_sessions_get_user_movements': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/movements",
+    'url_sessions_get_inassistance': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/get_inassistance",
+    'url_sessions_end_session': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/finalize",
+    'url_agreements_create': api_url+"/groups/{id_grupo}/agreements",
+    'url_agreements_personalized_create': api_url+"/groups/{id_grupo}/personalized_agreements",
+    'url_agreements_get_personalized_create': api_url+"/groups/{id_grupo}/personalized_agreements",
+    'url_loans_create': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/loans",
+    'url_loans_extend': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/loans/{id_prestamo}/extend",
+    'url_loans_pay': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/loans/pay",
+    'url_loans_get_one': api_url+"/groups/{id_grupo}/users/{id_socio}/loans/{id_prestamo}",
+    'url_loans_get_mult': api_url+"/groups/{id_grupo}/users/{id_socio}/loans/",
+    'url_loans_observations': api_url+"/loans/observations",
+    'url_loans_get_users': api_url+"/groups/{id_grupo}/loans/users/",
+    'url_loans_get_loan_info': api_url+"/groups/{id_grupo}/loans/users/loans_data",
+    'url_penalties_assign': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/penalties",
+    'url_penalties_predefined': api_url+"/groups/{id_grupo}/sessions/predefined_penalties",
+    'url_penalties_assign_predefined': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/assign_predefined",
+    'url_penalties_pay': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/penalties/pay",
+    'url_penalties_pay_predefined': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/predefined_penalties/pay",
+    'url_penalties_get_penalties_user': api_url+"/groups/{id_grupo}/users/{id_socio}/penalties",
+    'url_penalties_get_all_penalties_user': api_url+"/groups/{id_grupo}/penalties?status=payed,unpayed",
+    'url_penalties_get_predefined_penalties_user': api_url+"/groups/{id_grupo}/users/{id_socio}/predefined_penalties",
+    'url_penalties_get_predefined_penalties': api_url+"/groups/{id_grupo}/predefined_penalties",
+    'url_penalties_get_users': api_url+"/groups/{id_grupo}/penalties/users",
+    'url_penalties_get_users': api_url+"/groups/{id_grupo}/predefined_penalties/users",
+    'url_actions_buy': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/actions",
+    'url_actions_retreat': api_url+"/groups/{id_grupo}/sessions/{id_sesion}/users/{id_socio}/actions/retreat",
+    'url_actions_get': api_url+"/groups/{id_grupo}/users/{id_socio}/actions?status=payed,unpayed",
 }
 
+
 default_headers = headers = {
-  'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VybmFtZSI6ImphdmllciIsIlNvY2lvX2lkIjo1NCwiaWF0IjoxNjY0Mjk0MzEyfQ.OTil_J1PWovrJWOCdAluB86eiZYMB5qC_zXvl5dFZ5w',
-  'Content-Type': 'application/json'
+  'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VybmFtZSI6ImphdmllciIsIlNvY2lvX2lkIjo1NCwiaWF0IjoxNjY0Mjk0MzEyfQ.OTil_J1PWovrJWOCdAluB86eiZYMB5qC_zXvl5dFZ5w',
+  'Content-Type': 'application/json',
+  "Accept": "application/json",
 }
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -86,7 +124,7 @@ xls_words_int = ['COMPRA_ACCIONES', 'PAGO_MULTA', 'AMPLIACIÓN', 'NUM_SESIONES',
 column_xls_words = 1
 month_words = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"]
 
-db_name = 'railway'
+db_name = 'cosecha'
 
 
 columnas_ganancias = {
@@ -112,7 +150,7 @@ columnas_interes_prestamo = {
 columnas_interes_prestamo_comp = columnas_interes_prestamo.copy()
 columnas_interes_prestamo_comp.pop("Interes_prestamo_id", None)
 
-columnas_socio_accion = ['Grupo_socio_id', 'Socio_id', 'Grupo_id', 'Tipo_socio', 'Acciones', 'Status']
+columnas_socio_accion = ['Grupo_socio_id', 'Socio_id', 'Grupo_id', 'Tipo_socio', 'Acciones', 'Status', 'unique_key']
 
 columnas_socio = ['CURP']
 
@@ -213,6 +251,7 @@ dict_file_name_sheets_id = {
   'Caja la llave': '1WazkPgG1qg7MqXBNZjRNMqqsHsCpCI5PNJ-grs8wq1I',
   'Agrosemilla sin varo': '1yj7-CIEKjFyz9KSTayRdVDVBggkdMOD3-tiDNj5UQ80',
   'Caja llanitos Hidalgo': '1k_qWCRkdZoxZLeI5y0R3i2SYmD8uKMgFEtdCf4l6Sco',
+  'Caja Cadereyta': '1FxIHK7NNRQz95_RlfEeuMeSS900KwGWC5dn9Y9nbxqs',
 }
 
 tipo_xls_catalogo_bd = {

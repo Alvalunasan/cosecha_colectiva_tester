@@ -16,7 +16,10 @@ def get_acuerdos_grupo(id_grupo):
 
     dict_acuerdos = (cosecha_db.Acuerdos & query).fetch(as_dict = True)
 
-    return dict_acuerdos[0]
+    if len(dict_acuerdos) > 0:
+        return dict_acuerdos[0]
+    else:
+        return None
 
 def get_all_acuerdos(id_grupo):
 
@@ -138,6 +141,18 @@ def get_all_sesiones_grupo(id_grupo):
     sesion_list = [v[0] for v in sesion_list]
     return sesion_list
 
+
+def get_last_active_sesion_grupo(id_grupo):
+
+    query = dict()
+    query['Grupo_id'] = id_grupo
+    query['Activa'] = 1
+
+    last_session = list((cosecha_db.Sesiones & query).fetch('KEY', order_by='Sesion_id desc', limit=1, as_dict=False))
+    last_session = [v[0] for v in last_session]
+    last_session = int(last_session[0])
+    return last_session
+
     
 def get_codigo_grupo(id_grupo):
 
@@ -249,7 +264,10 @@ def restart_grupo_acciones(id_grupo, desde_sesion_0=False):
 
     if not desde_sesion_0:
         dict_acuerdos = get_acuerdos_grupo(id_grupo)
-        minimo_aportacion = float(dict_acuerdos['Minimo_aportacion'])
+        if dict_acuerdos:
+            minimo_aportacion = float(dict_acuerdos['Minimo_aportacion'])
+        else:
+            minimo_aportacion = 0
     else:
         minimo_aportacion = 0
 
@@ -539,7 +557,7 @@ def insert_grupo(grupo_data):
     return grupo_id[0]
 
 
-def prepare_insert_socio_grupo(xls_name, id_grupo):
+def prepare_insert_socio_grupo(xls_name, id_grupo, skip_first=False):
 
     socios_xls = pd.DataFrame(ms.get_dict_usuarios_xls(xls_name))
     curp_list = socios_xls['CURP'].to_list()
@@ -561,11 +579,17 @@ def prepare_insert_socio_grupo(xls_name, id_grupo):
     aux_df['Acciones'] = 0
     aux_df['Grupo_id'] = id_grupo
     aux_df['Grupo_socio_id'] = 0
+    aux_df['unique_key'] = aux_df['Socio_id'].astype(str) + '_' + aux_df['Grupo_id'].astype(str)
+
 
     aux_df = aux_df[config.columnas_socio_accion]
     aux_df = aux_df.drop('Grupo_socio_id', axis=1)
 
+    if skip_first:
+        aux_df = aux_df.loc[1:,:]
+
     print(aux_df)
+    print(type(aux_df))
 
     insert_grupo_socio(aux_df.to_dict('records'))
 

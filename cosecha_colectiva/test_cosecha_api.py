@@ -18,8 +18,10 @@ class CAF_API_general():
 
         logging.info('API CALL, User Login: %s', username)
 
-        dict_payload = {"Username": username, "Password": password}
-        response = requests.request("POST", config.url_dict['url_login'], headers=config.default_headers, data=json.dumps(dict_payload))
+        dict_payload = {"username": username, "password": password}
+        payload = json.dumps(dict_payload)
+        print('payload', payload)
+        response = requests.request("POST", config.url_dict['url_login'], headers=config.default_headers, data=payload)
 
         print(response)
 
@@ -30,8 +32,12 @@ class CAF_API_general():
         response_dict = json.loads(response.text)
         this_token = response_dict['token']
         user_header = config.default_headers.copy()
-        user_header["Authorization"] = this_token
-        socio_id = response_dict['data']['Socio_id']
+        user_header["Authorization"] = f"Bearer {this_token}"
+
+        # New way to get socio_id instead of the api
+        socio_dict = qc.get_socio(username)
+        socio_id = socio_dict[0]['Socio_id']
+        #socio_id = response_dict['data']['Socio_id']
 
         return user_header, socio_id
     
@@ -41,16 +47,18 @@ class CAF_API_general():
         logging.info('API CALL, Get gruop user: %s', username)
 
         user_header,_ = CAF_API_general.user_login(username, password)
-        response = requests.request("GET", config.url_dict['url_socio_grupo'], headers=user_header, data={})
+        response = requests.request("GET", config.url_dict['url_users_get_groups'], headers=user_header, data={})
 
         if not response:
             logging.error('%s', response.text)
             raise Exception('No se pudo obtener grupo id del usuario ')
         
         dict_response = json.loads(response.text)
-        id_grupo = dict_response["data"][-1]["Grupo_id"]
+        print(dict_response)
+        id_grupo = dict_response["groups"][-1]["Grupo_id"]
 
         return id_grupo
+
     
     @staticmethod
     def login_first_user_excel(xls_name):
@@ -98,11 +106,7 @@ class CAF_API_group_creation_tester():
 
             payload = json.dumps(user)
             time.sleep(0.1) 
-            print("config.url_dict['url_socio']")
-            print(config.url_dict['url_socio'])
-            print('payload')
-            print(payload)
-            response = requests.request("POST", config.url_dict['url_socio'], headers=config.default_headers, data=payload)
+            response = requests.request("POST", config.url_dict['url_login_register'], headers=config.default_headers, data=payload)
 
             if not response:
                 logging.error('%s', response.text)
@@ -119,14 +123,14 @@ class CAF_API_group_creation_tester():
         dict_grupo = config.default_group_data
         dict_grupo["Nombre_grupo"] = nombre_grupo
         payload = json.dumps(dict_grupo)
-        response = requests.request("POST", config.url_dict['url_grupo'], headers=user_header, data=payload)
+        response = requests.request("POST", config.url_dict['url_groups_create'], headers=user_header, data=payload)
 
         if not response:
             logging.error('%s', response.text)
             raise Exception('No se pudo crear el grupo ')
 
-        id_grupo = json.loads(response.text)['data']
-        id_grupo = id_grupo['Grupo_id']
+        id_grupo = json.loads(response.text)
+        id_grupo = id_grupo['groupId']
         
         return id_grupo
 
@@ -138,8 +142,8 @@ class CAF_API_group_creation_tester():
 
         user_header,_ = CAF_API_general.user_login(username, password)
         time.sleep(1)
-        response = requests.request("POST", config.url_dict['url_socio_grupo'], headers=user_header, data=json.dumps(codigo_grupo_dict))
-        time.sleep(5)
+        response = requests.request("POST", config.url_dict['url_groups_join'], headers=user_header, data=json.dumps(codigo_grupo_dict))
+        time.sleep(1)
         if not response:
             logging.error('%s', response.text)
             raise Exception('No se pudo unir el usuario al grupo ')
@@ -169,12 +173,26 @@ class CAF_API_group_creation_tester():
         _, id_suplente = CAF_API_general.user_login(dict_df_grupo[1]['Username'],dict_df_grupo[1]['Password'])
 
         dict_df_acuerdos = ms.get_dict_acuerdos_xls(xls_name, idx_acuerdos=idx_acuerdos)
-        dict_df_acuerdos['Id_socio_administrador'] = id_admin
-        dict_df_acuerdos['Id_socio_administrador_suplente'] = id_suplente
+        dict_df_acuerdos['Id_socio_administrador'] = int(id_admin)
+        dict_df_acuerdos['Id_socio_administrador_suplente'] = int(id_suplente)
 
+        dict_df_acuerdos['id_treasurer_user'] = dict_df_acuerdos['Id_socio_administrador']
+        dict_df_acuerdos['id_secretary_user'] = dict_df_acuerdos['Id_socio_administrador_suplente'] 
 
-        url_acuerdos = config.url_dict['url_acuerdos'].format(id_grupo=id_grupo)
-        response = requests.request("POST", url_acuerdos, headers=admin_header, data=json.dumps(dict_df_acuerdos))
+        dict_df_acuerdos['allow_action_retreat_on_normal_session'] = True
+
+        if dict_df_acuerdos['Ampliacion_prestamos']:
+            dict_df_acuerdos['Ampliacion_prestamos'] = True
+        else:
+            dict_df_acuerdos['Ampliacion_prestamos'] = False
+
+        #dict_df_acuerdos.pop('Fecha_acuerdos_fin')
+        #dict_df_acuerdos.pop('Periodo_cargos')
+        #dict_df_acuerdos.pop('Periodo_reuniones')
+
+        payload = json.dumps(dict_df_acuerdos)
+        url_acuerdos = config.url_dict['url_agreements_create'].format(id_grupo=id_grupo)
+        response = requests.request("POST", url_acuerdos, headers=admin_header, data=payload)
 
         if not response:
             logging.error('%s', response.text)
@@ -196,6 +214,18 @@ class CAF_API_group_creation_tester():
         
         caja_final =  dict_acuerdos['Minimo_aportacion']*len(list_socios)
         qc.write_first_caja(id_sesion, caja_final)
+
+
+    @staticmethod
+    def create_group_only(xls_name):
+
+        logging.info('Proceso creación grupo %s', xls_name)
+
+        CAF_API_group_creation_tester.create_users(xls_name)
+        time.sleep(5)
+        admin_header,_ = CAF_API_general.login_first_user_excel(xls_name)
+        time.sleep(5)
+        id_grupo = CAF_API_group_creation_tester.create_group(xls_name, admin_header)
 
     @staticmethod
     def main_create_group_simple(xls_name):
@@ -234,6 +264,7 @@ class CAF_API_group_creation_tester():
         time.sleep(8)
         CAF_API_group_creation_tester.add_xls_users_group(xls_name, id_grupo)
         time.sleep(8)
+        print('id_grupo creado', id_grupo)
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
 
         id_sesion = qc.get_active_sesion(id_grupo)
@@ -243,7 +274,7 @@ class CAF_API_group_creation_tester():
         time.sleep(8)
         CAF_API_group_creation_tester.acciones_iniciales(xls_name, id_grupo, id_sesion)
         time.sleep(8)
-        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        CAF_API_sessions_tester.end_session(id_grupo, id_sesion, admin_header)
 
 
 class CAF_API_sessions_tester():
@@ -256,7 +287,7 @@ class CAF_API_sessions_tester():
         logging.info('API CALL, Crear sesion %d', id_grupo)
 
         payload_session = CAF_API_sessions_tester.create_session_payload(id_grupo)
-        url_crear_sesion = config.url_dict['url_crear_sesion'].format(id_grupo=id_grupo)
+        url_crear_sesion = config.url_dict['url_sessions_create'].format(id_grupo=id_grupo)
 
         logging.info('url_crear_sesion %s payload %s', url_crear_sesion, payload_session)
         response = requests.request("POST", url_crear_sesion, headers=admin_header, data=json.dumps(payload_session))
@@ -273,14 +304,14 @@ class CAF_API_sessions_tester():
             raise Exception('No se pudo crear sesion ')
 
     @staticmethod
-    def end_session(id_grupo, admin_header):
+    def end_session(id_grupo, id_sesion, admin_header):
 
         logging.info('API CALL, Finalizar sesion %d', id_grupo)
 
-        url_finalizar_sesion = config.url_dict['url_finalizar_sesion'].format(id_grupo=id_grupo)
+        url_end_session = config.url_dict['url_sessions_end_session'].format(id_grupo=id_grupo, id_sesion=id_sesion)
 
-        logging.info('url_finalizar_sesion %s payload %s', url_finalizar_sesion, '{}')
-        response = requests.request("POST", url_finalizar_sesion, headers=admin_header, data={})
+        logging.info('url_end_session %s payload %s', url_end_session, '{}')
+        response = requests.request("POST", url_end_session, headers=admin_header, data={})
 
         if not response:
             logging.error('%s', response.text)
@@ -292,18 +323,17 @@ class CAF_API_sessions_tester():
         #Consulta todos los socios del grupo
         socios_dict = qc.get_socios_grupo(id_grupo, as_orderded_dict=False)
 
+        print('socios_dict', socios_dict)
+
         payload_sesion = dict()
-        payload_sesion["Socios"] = list()
+        payload_sesion["users"] = list()
         for user in socios_dict:
-            user_dict = dict()
-            user_dict["Socio_id"] = int(user["Socio_id"])
-            user_dict["Presente"] = 1
-            payload_sesion["Socios"].append(user_dict)
+            payload_sesion["users"].append(int(user["Socio_id"]))
 
         return payload_sesion
     
     @staticmethod
-    def compra_acciones(df_acciones, id_grupo, admin_header, costo_accion):
+    def compra_acciones(df_acciones, id_grupo, id_sesion, admin_header, costo_accion):
 
         logging.info('API CALL, Compra acciones: %s', df_acciones)
 
@@ -311,9 +341,9 @@ class CAF_API_sessions_tester():
 
             socio = df_acciones.index[idx_socio]
             payload = dict()
-            payload["Cantidad"] = df_acciones.loc[socio, 'COMPRA_ACCIONES'][0]*costo_accion
+            payload["Cantidad"] = df_acciones.loc[socio, 'COMPRA_ACCIONES'][0]
 
-            url_compra_accion = config.url_dict['url_compra_acciones'].format(id_grupo=id_grupo, id_socio=socio)
+            url_compra_accion = config.url_dict['url_actions_buy'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio)
 
             logging.debug('Payload Compra acciones: %s', payload)
             logging.debug('url_compra_accion: %s', url_compra_accion)
@@ -328,7 +358,7 @@ class CAF_API_sessions_tester():
             time.sleep(1)
 
     @staticmethod
-    def retiro_acciones(df_retiro_acciones, id_grupo, admin_header, costo_accion):
+    def retiro_acciones(df_retiro_acciones, id_grupo, id_sesion, admin_header, costo_accion):
 
         logging.info('API CALL, Compra acciones: %s', df_retiro_acciones)
 
@@ -338,7 +368,7 @@ class CAF_API_sessions_tester():
             payload = dict()
             payload["Cantidad"] = df_retiro_acciones.loc[socio, 'RETIRO_ACCIONES'][0]*costo_accion
 
-            url_retiro_accion = config.url_dict['url_retiro_acciones'].format(id_grupo=id_grupo, id_socio=socio)
+            url_retiro_accion = config.url_dict['url_actions_retreat'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio)
 
             logging.debug('Payload Compra acciones: %s', payload)
             logging.debug('url_compra_accion: %s', url_retiro_accion)
@@ -353,7 +383,7 @@ class CAF_API_sessions_tester():
             time.sleep(1)
 
     @staticmethod
-    def pagar_multas_multiples(df_multas, id_grupo, sesion_list, admin_header):
+    def pagar_multas_multiples(df_multas, id_grupo, id_sesion, sesion_list, admin_header):
 
         if df_multas.shape[0] > 0:
 
@@ -378,7 +408,7 @@ class CAF_API_sessions_tester():
                         this_multa_id = df_multas.loc[socio,'Multa_id'][idx_multa]
                         payload['Multas'].append(this_multa_id)
             
-                url_pagar_multa = config.url_dict['url_pagar_multa'].format(id_grupo=id_grupo)
+                url_pagar_multa = config.url_dict['url_penalties_pay'].format(id_grupo=id_grupo, id_sesion=id_sesion)
 
                 logging.debug('payload pagar multa %s', payload)
 
@@ -392,7 +422,7 @@ class CAF_API_sessions_tester():
                 time.sleep(1)
 
     @staticmethod
-    def insertar_multa(df_multa, id_grupo, admin_header):
+    def insertar_multa(df_multa, id_grupo, id_sesion, admin_header):
 
         logging.info('API CALL, Insertar multa: %s', df_multa)
 
@@ -406,7 +436,7 @@ class CAF_API_sessions_tester():
                 payload["Monto_multa"] = float(monto_multa)
                 payload["Descripcion"] = "Multa # " + str(idx_multa+1) + " socio "  + str(socio) + " grupo: " +  str(id_grupo)
 
-                url_crear_multa = config.url_dict['url_crear_multa'].format(id_grupo=id_grupo, id_socio=socio)
+                url_crear_multa = config.url_dict['url_penalties_assign'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio)
 
                 logging.debug('Payload Insertar Multa acciones: %s', payload)
                 logging.debug('url_crear_multa: %s', url_crear_multa)
@@ -421,7 +451,7 @@ class CAF_API_sessions_tester():
                 time.sleep(1)
 
     @staticmethod
-    def pagar_prestamos_multiples(df_abono, id_grupo, sesion_list, admin_header):
+    def pagar_prestamos_multiples(df_abono, id_grupo, id_sesion, sesion_list, admin_header):
 
         if df_abono.shape[0] > 0:
 
@@ -451,7 +481,7 @@ class CAF_API_sessions_tester():
                         #idx_prestamo += 1
             
 
-                url_pagar_prestamo = config.url_dict['url_pagar_prestamo'].format(id_grupo=id_grupo)
+                url_pagar_prestamo = config.url_dict['url_loans_pay'].format(id_grupo=id_grupo, id_sesion=id_sesion)
 
                 logging.debug('payload pagar presatmos %s', payload)
 
@@ -465,7 +495,7 @@ class CAF_API_sessions_tester():
                 time.sleep(1)
 
     @staticmethod
-    def generar_prestamos_multiples(df_prestamo, id_grupo, sesion_list, admin_header):
+    def generar_prestamos_multiples(df_prestamo, id_grupo, id_sesion, sesion_list, admin_header):
 
         if df_prestamo.shape[0] > 0:
 
@@ -506,9 +536,9 @@ class CAF_API_sessions_tester():
                             payload['Prestamo_original_id'] = df_prestamo.loc[socio_prestamo,'Prestamo_id'][idx_prestamo]
 
                         if ampliacion:
-                            url_generar_prestamo = config.url_dict['url_ampliar_prestamo'].format(id_grupo=id_grupo, id_socio=socio_prestamo)
+                            url_generar_prestamo = config.url_dict['url_loans_extend'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio_prestamo)
                         else:
-                            url_generar_prestamo = config.url_dict['url_generar_prestamo'].format(id_grupo=id_grupo, id_socio=socio_prestamo)
+                            url_generar_prestamo = config.url_dict['url_loans_create'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio_prestamo)
 
                         logging.debug('url generar prestamo %s', url_generar_prestamo)
                         logging.debug('payload generar/ampliar prestamo %s', payload)
@@ -525,7 +555,7 @@ class CAF_API_sessions_tester():
 
 
     @staticmethod
-    def cambiar_status_socio(df_status_socio, id_grupo, admin_header):
+    def cambiar_status_socio(df_status_socio, id_grupo, id_sesion, admin_header):
 
         if df_status_socio.shape[0] > 0:
 
@@ -538,7 +568,8 @@ class CAF_API_sessions_tester():
 
                 payload = {'Status': new_status}
 
-                url_status_socio = config.url_dict['url_status_socio'].format(id_grupo=id_grupo, id_socio=socio)
+
+                url_status_socio = config.url_dict['url_groups_deactivate_user'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio)
                 response = requests.request("POST", url_status_socio, headers=admin_header, data=json.dumps(payload))
 
                 if not response:
@@ -555,7 +586,8 @@ class CAF_API_sessions_tester():
         id_grupo, admin_header = CAF_API_general.get_grupo_id_admin_header_xls(xls_name)
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
 
-        sesion_list = qc.get_all_sesiones_grupo(id_grupo)
+        #sesion_list = qc.get_all_sesiones_grupo(id_grupo)
+        last_session = qc.get_active_sesion(id_grupo)
 
         # toma la info de la sesion del excel y lo "combina" con los id de usuarios
         #dict_users = CAF_API_general.get_all_users_id(xls_name)
@@ -573,15 +605,16 @@ class CAF_API_sessions_tester():
 
         qc.sobreescribe_acciones(dict_session["COMPRA_ACCIONES"], id_grupo, dict_acuerdos['Costo_acciones'])
 
-        qc.sobreescribe_caja_acciones_sesion(dict_session["COMPRA_ACCIONES"], sesion_list[-1], dict_acuerdos['Costo_acciones'])
-        qc.abona_a_caja(1000000, sesion_list[-1])
+        qc.sobreescribe_caja_acciones_sesion(dict_session["COMPRA_ACCIONES"], last_session, dict_acuerdos['Costo_acciones'])
+        qc.abona_a_caja(1000000, last_session)
 
         #Finalizar sesion
-        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        CAF_API_sessions_tester.end_session(id_grupo, last_session, admin_header)
 
         time.sleep(2)
 
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
+        last_session = qc.get_last_active_sesion_grupo(id_grupo)
 
         #Generacion de prestamos
         CAF_API_sessions_tester.generar_prestamos_multiples(dict_session['PRÉSTAMO'], id_grupo, sesion_list, admin_header)
@@ -589,7 +622,8 @@ class CAF_API_sessions_tester():
         qc.set_acuerdos_interes_0(id_grupo)
 
         #Finalizar sesion
-        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        last_session = qc.get_active_sesion(id_grupo)
+        CAF_API_sessions_tester.end_session(id_grupo, last_session, admin_header)
         time.sleep(2)
 
         CAF_API_sessions_tester.create_session(id_grupo, admin_header)
@@ -604,7 +638,8 @@ class CAF_API_sessions_tester():
         CAF_API_group_creation_tester.create_acuerdos(xls_name, idx_acuerdos=0)
 
         #Finalizar sesion
-        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        last_session = qc.get_active_sesion(id_grupo)
+        CAF_API_sessions_tester.end_session(id_grupo, last_session, admin_header)
 
         qc.sobreescribe_ganancias(dict_session["GANANCIAS"], sesion_list[-1])
 
@@ -632,6 +667,7 @@ class CAF_API_sessions_tester():
         print('id_grupo', id_grupo)
 
         sesion_list = qc.get_all_sesiones_grupo(id_grupo)
+        active_session = qc.get_active_sesion(id_grupo)
 
         # toma la info de la sesion del excel y lo "combina" con los id de usuarios
         #dict_users = CAF_API_general.get_all_users_id(xls_name)
@@ -639,7 +675,7 @@ class CAF_API_sessions_tester():
         dict_session = ms.read_transform_info_xls(xls_name, session_num, dict_users, type_xls=type_xls)
         logging.info(dict_session)
 
-        CAF_API_sessions_tester.cambiar_status_socio(dict_session["STATUS_SOCIOS"], id_grupo, admin_header)
+        CAF_API_sessions_tester.cambiar_status_socio(dict_session["STATUS_SOCIOS"], id_grupo, active_session, admin_header)
 
         # Se crearon acuerdos
         if dict_session['NUEVOS_ACUERDOS'].shape[0] > 0:
@@ -649,23 +685,23 @@ class CAF_API_sessions_tester():
         dict_acuerdos = qc.get_acuerdos_grupo(id_grupo)
 
         #Compra acciones
-        CAF_API_sessions_tester.compra_acciones(dict_session["COMPRA_ACCIONES"], id_grupo, admin_header, dict_acuerdos['Costo_acciones'])
+        CAF_API_sessions_tester.compra_acciones(dict_session["COMPRA_ACCIONES"], id_grupo, active_session, admin_header, dict_acuerdos['Costo_acciones'])
 
         #Multas
-        CAF_API_sessions_tester.insertar_multa(dict_session['MULTAS'], id_grupo, admin_header)
-        CAF_API_sessions_tester.pagar_multas_multiples(dict_session['PAGO_MULTA'], id_grupo, sesion_list, admin_header)
+        CAF_API_sessions_tester.insertar_multa(dict_session['MULTAS'], id_grupo, active_session, admin_header)
+        CAF_API_sessions_tester.pagar_multas_multiples(dict_session['PAGO_MULTA'], id_grupo, active_session, sesion_list, admin_header)
 
         #Pago prestamos
-        CAF_API_sessions_tester.pagar_prestamos_multiples(dict_session['ABONO'],id_grupo, sesion_list, admin_header)
+        CAF_API_sessions_tester.pagar_prestamos_multiples(dict_session['ABONO'],id_grupo, active_session, sesion_list, admin_header)
 
         #Generacion de prestamos
-        CAF_API_sessions_tester.generar_prestamos_multiples(dict_session['PRÉSTAMO'], id_grupo, sesion_list, admin_header)
+        CAF_API_sessions_tester.generar_prestamos_multiples(dict_session['PRÉSTAMO'], id_grupo, active_session, sesion_list, admin_header)
 
         #Retiro de acciones
-        CAF_API_sessions_tester.retiro_acciones(dict_session['RETIRO_ACCIONES'], id_grupo, admin_header, dict_acuerdos['Costo_acciones'])
+        CAF_API_sessions_tester.retiro_acciones(dict_session['RETIRO_ACCIONES'], id_grupo, active_session, admin_header, dict_acuerdos['Costo_acciones'])
         
         #Finalizar sesion
-        CAF_API_sessions_tester.end_session(id_grupo, admin_header)
+        CAF_API_sessions_tester.end_session(id_grupo, active_session, admin_header)
 
 
 

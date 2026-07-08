@@ -54,6 +54,12 @@ def get_dict_acuerdos_xls(xls_name, idx_acuerdos=0):
     #xls_filename = pathlib.Path(config.xls_dir, xls_name)
 
     df_acuerdos = read_caf_excel_sheet(pathlib.Path(xls_name), "Acuerdos")
+
+    for acuerdo_var in config.acuerdos_var_type:
+        var_type = config.acuerdos_var_type[acuerdo_var]
+        if var_type and acuerdo_var in df_acuerdos.columns:
+            df_acuerdos[acuerdo_var] = df_acuerdos[acuerdo_var].astype(var_type)
+
     dict_df_acuerdos= df_acuerdos.to_dict(orient='records')
     dict_df_acuerdos = dict_df_acuerdos[idx_acuerdos]
 
