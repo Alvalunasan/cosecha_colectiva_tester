@@ -60,17 +60,9 @@ ifnull(socio_prestamos.num_prestamos_pagados,0) as num_prestamos_pagados,
 ifnull(socio_prestamos.num_prestamos_vigentes,0) as num_prestamos_vigentes,
 ifnull(socio_prestamos.num_prestamos,0) as num_prestamos,
 ifnull(socio_prestamos.saldo_prestamo,0) as saldo_prestamo,
-ifnull(socio_prestamos.interes_futuro,0) as interes_futuro,
 sum(socio_grupo.acciones) as acciones_actuales,
 case when sum(socio_transacciones.sum_compra_acciones) > 0 then socio_prestamos.sum_monto_prestamo / sum(socio_transacciones.sum_compra_acciones) else NULL end as prestamo_vs_ahorro,
-
-socio_multas.socio_id_multas,
-socio_multas.grupo_id_multas,
-ifnull(socio_multas.sum_monto_multa_total,0) as sum_monto_multa_total,
-ifnull(socio_multas.sum_monto_multa_pagadas,0) as sum_monto_multa_pagadas,
-ifnull(socio_multas.saldo_multas,0) as saldo_multas,
-ifnull(socio_multas.num_multas,0) as num_multas,
-
+socio_multas.*,
 socio_asistencias.*,
 socio_ganancias.*,
 socio_transacciones.*,
@@ -117,20 +109,7 @@ sum(case when p.estatus_prestamo = 0 then p.monto_prestamo-p.monto_pagado else 0
 sum(case when p.sesiones_restantes < 0 then 1 else 0 end) as num_prestamos_vencidos,
 sum(p.estatus_prestamo) as num_prestamos_pagados,
 sum(case when p.estatus_prestamo = 0 then 1 else 0 end) as num_prestamos_vigentes,
-count(p.prestamo_id) as num_prestamos,
-
-sum(case when p.estatus_prestamo = 0 and p.estatus_ampliacion = 0 and a.Mod_calculo_interes = 1 and p.sesiones_restantes > 0 then round(p.monto_prestamo*a.Tasa_interes*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 0 and a.Mod_calculo_interes = 1 and p.sesiones_restantes <= 0 then round(p.monto_prestamo*(a.Tasa_interes + a.interes_morosidad)*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 1 and a.Mod_calculo_interes = 1 and p.sesiones_restantes > 0 then round(p.monto_prestamo*(a.Tasa_interes + a.interes_ampliacion)*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 1 and a.Mod_calculo_interes = 1 and p.sesiones_restantes <= 0 then round(p.monto_prestamo*(a.Tasa_interes+ + a.interes_ampliacion+a.interes_morosidad)*2/100)/2
-    
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 0 and a.Mod_calculo_interes = 0 and p.sesiones_restantes > 0 then  round((p.monto_prestamo-p.monto_pagado)*a.Tasa_interes*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 0 and a.Mod_calculo_interes = 0 and p.sesiones_restantes <= 0 then round((p.monto_prestamo-p.monto_pagado)*(a.Tasa_interes + a.interes_morosidad)*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 1 and a.Mod_calculo_interes = 0 and p.sesiones_restantes > 0 then  round((p.monto_prestamo-p.monto_pagado)*(a.Tasa_interes + a.interes_ampliacion)*2/100)/2
-     when p.estatus_prestamo = 0 and p.estatus_ampliacion = 1 and a.Mod_calculo_interes = 0 and p.sesiones_restantes <= 0 then round((p.monto_prestamo-p.monto_pagado)*(a.Tasa_interes+ + a.interes_ampliacion+a.interes_morosidad)*2/100)/2
-     else 0 end)
-     as interes_futuro
- 
+count(p.prestamo_id) as num_prestamos
 
 
 from railway.prestamos p 
@@ -138,9 +117,6 @@ from railway.prestamos p
 
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = p.Sesion_id
-
-inner join acuerdos a
-on a.acuerdo_id = p.acuerdos_id
 
 group by grupo_sesion.grupo_id, p.socio_id
 ) socio_prestamos
@@ -157,7 +133,6 @@ m.socio_id as socio_id_multas,
 grupo_sesion.grupo_id as grupo_id_multas,
 sum(m.monto_multa) as sum_monto_multa_total,
 sum(case when m.status =1 then m.monto_multa else 0 end) as sum_monto_multa_pagadas,
-sum(case when m.status =0 then m.monto_multa else 0 end) as saldo_multas,
 count(m.multa_id) as num_multas
 
 
@@ -257,76 +232,7 @@ union
 (
 select 
 
-ossd.grupo_id,
-ossd.Nombre_grupo,
-ossd.num_socio_grupo,
-ossd.socio_id,
-ossd.nombres,
-ossd.apellidos,
-ossd.nacionalidad,
-ossd.sexo,
-ossd.Escolaridad,
-ossd.Ocupacion,
-ossd.Estado_civil,
-ossd.Hijos,
-ossd.Localidad,
-ossd.Municipio,
-ossd.Estado,
-ossd.Fecha_reg,
-ossd.edad,
-ossd.rango_edad,
-ossd.status_socio,
-
-ossd.socio_id_prestamos,
-ossd.grupo_id_prestamos,
-ossd.sum_monto_prestamo,
-ossd.promedio_monto_prestamo,
-ossd.sum_monto_pagado,
-ossd.sum_interes_generado,
-ossd.sum_interes_pagado,
-ossd.num_prestamos_ampliacion,
-ossd.monto_riesgo,
-ossd.num_prestamos_vencidos,
-ossd.num_prestamos_pagados,
-ossd.num_prestamos_vigentes,
-ossd.num_prestamos,
-0 as saldo_prestamo,
-0 as interes_futuro,
-ossd.acciones_actuales,
-ossd.prestamo_vs_ahorro,
-
-ossd.socio_id_multas,
-ossd.grupo_id_multas,
-ossd.sum_monto_multa_total,
-ossd.sum_monto_multa_pagadas,
-0 as saldo_multas,
-ossd.num_multas,
-
-ossd.socio_id_asistencias,
-ossd.grupo_id_asistencias,
-ossd.num_sesiones_grupo,
-ossd.num_sesiones_presente,
-ossd.tasa_asistencia,
-ossd.tasa_retardos,
-
-ossd.socio_id_ganancias,
-ossd.grupo_id_ganancias,
-ossd.ganancias_totales,
-ossd.ganancias_recibidas,
-
-ossd.socio_id_transacciones,
-ossd.grupo_id_transacciones,
-ossd.sum_abonos_prestamos,
-ossd.count_abonos_prestamos,
-ossd.sum_compra_acciones,
-ossd.count_compra_acciones,
-ossd.sum_entrega_prestamos,
-ossd.count_entrega_prestamos,
-ossd.sum_pago_multas,
-ossd.count_pago_multas,
-ossd.sum_retiro_acciones,
-ossd.count_retiro_acciones,
-
+ossd.*,
 gc.Color_grupo,
 1 as grupo_socio_id,
 "1" as nombre_usuario
@@ -336,8 +242,3 @@ from old_socios_stats_dashboard  ossd
 left join grupos_colores gc
 on gc.grupo_id = ossd.grupo_id
 )
-
-
-
-
-

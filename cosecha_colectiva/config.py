@@ -213,6 +213,7 @@ dict_file_name_sheets_id = {
   'Caja la llave': '1WazkPgG1qg7MqXBNZjRNMqqsHsCpCI5PNJ-grs8wq1I',
   'Agrosemilla sin varo': '1yj7-CIEKjFyz9KSTayRdVDVBggkdMOD3-tiDNj5UQ80',
   'Caja llanitos Hidalgo': '1k_qWCRkdZoxZLeI5y0R3i2SYmD8uKMgFEtdCf4l6Sco',
+  'Caja Cadereyta': '1FxIHK7NNRQz95_RlfEeuMeSS900KwGWC5dn9Y9nbxqs',
 }
 
 tipo_xls_catalogo_bd = {

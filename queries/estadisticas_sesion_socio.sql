@@ -102,7 +102,7 @@ avg(p.monto_prestamo) as promedio_monto_prestamo,
 sum(case when Prestamo_original_id is not null then 1 else 0 end) as ampliaciones
 
 
-from railway.prestamos p 
+from cosecha.prestamos p 
 
 group by sesion_id_prestamos, socio_id_prestamos
 ) sesion_socio_prestamos
@@ -120,7 +120,7 @@ sum(m.monto_multa) as sum_monto_multas,
 count(m.multa_id) as num_multas
 
 
-from railway.multas m
+from cosecha.multas m
 
 group by sesion_id_multas, socio_id_multas
 
@@ -138,7 +138,7 @@ a.socio_id as socio_id_asistencias,
 case when a.presente>=1 then 1 else 0 end as socio_presente,
 case when a.presente=2 then 1 else 0 end as socio_retardo
 
-from railway.asistencias a
+from cosecha.asistencias a
 
 
 ) sesion_socio_asistencias
@@ -169,9 +169,9 @@ sum(tp.monto_abono_interes) as sum_monto_abono_interes,
 max(timestamp) as ultima_transaccion
 
 
-from railway.transacciones t
+from cosecha.transacciones t
 
-left join railway.transaccion_prestamos tp
+left join cosecha.transaccion_prestamos tp
 on tp.transaccion_id = t.transaccion_id
 
 group by sesion_id_transacciones, socio_id_transacciones
@@ -190,7 +190,7 @@ ga.Monto_ganancia as sum_ganancias,
 case when ga.entregada = 1 then ga.Monto_ganancia else 0 end as sum_ganancias_entregadas,
 case when ga.entregada = 1 then 1 else 0 end as num_ganancias
 
-from railway.ganancias ga
+from cosecha.ganancias ga
 
 
 ) sesion_socio_ganancias
@@ -212,7 +212,7 @@ sum(case when ip.Tipo_interes =1 then 1 else 0 end) as num_prestamos_morosos,
 sum(case when ip.Tipo_interes =2 then 1 else 0 end) as num_prestamos_ampliados,
 sum(case when ip.Tipo_interes =3 then 1 else 0 end) as num_prestamos_ampliados_morosos
 
-from railway.interes_prestamo ip
+from cosecha.interes_prestamo ip
 
 inner join prestamos p 
 on p.Prestamo_id = ip.Prestamo_id

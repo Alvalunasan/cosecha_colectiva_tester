@@ -6,9 +6,9 @@ WITH grupo_sesion AS
 select 
 g.Grupo_id,
 s.sesion_id
-from railway.grupos g 
+from cosecha.grupos g 
 
-inner join railway.sesiones s
+inner join cosecha.sesiones s
 on s.grupo_id = g.grupo_id
 
 where g.datos_dashboard = 1 
@@ -42,7 +42,7 @@ grupo_sesion_stats.num_sesiones as num_sesiones,
 grupo_transacciones.*,
 max(gc.Color_grupo) as color_grupo
 
-from railway.grupos g
+from cosecha.grupos g
 
 left join
 (
@@ -61,7 +61,7 @@ sum(case when p.estatus_prestamo = 0 then 1 else 0 end) as num_prestamos_vigente
 count(p.prestamo_id) as num_prestamos
 
 
-from railway.prestamos p 
+from cosecha.prestamos p 
 
 
 inner join grupo_sesion
@@ -82,7 +82,7 @@ sum(case when m.status =1 then m.monto_multa else 0 end) as sum_monto_multa_paga
 count(m.multa_id) as num_multas
 
 
-from railway.multas m
+from cosecha.multas m
 
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = m.Sesion_id
@@ -100,7 +100,7 @@ sum(case when a.presente>=1 then 1 else 0 end) / count(a.asistencia_id) as tasa_
 sum(case when a.presente=2 then 1 else 0 end) / count(a.asistencia_id) as tasa_retardos
 
 
-from railway.asistencias a
+from cosecha.asistencias a
 
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = a.Sesion_id
@@ -131,7 +131,7 @@ sum(case when TIMESTAMPDIFF(YEAR, s.Fecha_nac, CURDATE()) > 66 then 1 else 0 end
 avg(TIMESTAMPDIFF(YEAR, s.Fecha_nac, CURDATE())) as edad_promedio
 
 
-from railway.grupo_socio gs
+from cosecha.grupo_socio gs
 
 inner join socios s
 on gs.Socio_id = s.socio_id
@@ -149,7 +149,7 @@ sum(ga.monto_ganancia) as ganancias_totales,
 sum(case when Entregada =1 then ga.monto_ganancia else 0 end) as ganancias_entregadas
 
 
-from railway.ganancias ga
+from cosecha.ganancias ga
 
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = ga.Sesion_id
@@ -205,7 +205,7 @@ sum(case when catalogo_id = 'RETIRO_ACCION' then 1 else 0 end) as count_retiro_a
 
 
 
-from railway.transacciones t
+from cosecha.transacciones t
 
 inner join grupo_sesion
 on grupo_sesion.Sesion_id = t.Sesion_id

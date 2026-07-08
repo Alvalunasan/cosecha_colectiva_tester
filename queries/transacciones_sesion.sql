@@ -13,7 +13,7 @@ s.tipo_sesion,
 so.nombres,
 so.apellidos
 
-from railway.transacciones t
+from cosecha.transacciones t
 
 inner join socios so
 on so.socio_id = t.socio_id
