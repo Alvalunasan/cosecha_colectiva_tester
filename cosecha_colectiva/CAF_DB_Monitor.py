@@ -263,7 +263,13 @@ class CAF_DB_Monitor():
             prestamos_activos = self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0]
             prestamo_id_df = prestamos_activos.groupby('Socio_id')['Prestamo_id'].apply(list).to_frame()
             df_abono.index.rename('Socio_id', inplace=True)
+
+            print(df_abono)
+
             df_abono = df_abono.join(prestamo_id_df, how='inner')
+
+            print(df_abono)
+
             df_abono = df_abono.explode(['ABONO', 'Prestamo_id'])
             df_abono['Prestamo_id'] = df_abono['Prestamo_id'].astype(int)
             df_abono = df_abono.set_index('Prestamo_id')
@@ -992,6 +998,12 @@ class CAF_DB_Monitor():
     def prepare_insert_asistencia(self):
 
         this_sesion = self.sesiones_bd.loc[self.sesiones_bd.shape[0]-1, 'Sesion_id']
+
+        print('self.sesiones_bd')
+        print(self.sesiones_bd)
+
+        print('this_sesion')
+        print(this_sesion)
 
         these_asistencias = self.socios_acciones.copy()
         these_asistencias['Presente'] = 1

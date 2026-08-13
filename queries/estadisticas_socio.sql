@@ -1,6 +1,5 @@
 
 
-
 WITH grupo_sesion AS
   (
 select 
@@ -113,7 +112,7 @@ sum(p.interes_generado) as sum_interes_generado,
 sum(p.interes_pagado) as sum_interes_pagado,
 sum(p.estatus_ampliacion) as num_prestamos_ampliacion,
 sum(case when p.sesiones_restantes = 1 then p.monto_prestamo-p.monto_pagado else 0 end) as monto_riesgo,
-sum(case when p.estatus_prestamo = 0 then p.monto_prestamo-p.monto_pagado else 0 end) as saldo_prestamo,
+sum(case when p.estatus_prestamo = 0 then p.monto_prestamo-p.monto_pagado+p.Interes_generado-p.Interes_pagado else 0 end) as saldo_prestamo,
 sum(case when p.sesiones_restantes < 0 then 1 else 0 end) as num_prestamos_vencidos,
 sum(p.estatus_prestamo) as num_prestamos_pagados,
 sum(case when p.estatus_prestamo = 0 then 1 else 0 end) as num_prestamos_vigentes,
@@ -232,6 +231,8 @@ sum(case when catalogo_id = 'PAGO_MULTA' then cantidad_movimiento else 0 end) as
 sum(case when catalogo_id = 'PAGO_MULTA' then 1 else 0 end) as count_pago_multas,
 sum(case when catalogo_id = 'RETIRO_ACCION' then -1*cantidad_movimiento else 0 end) as sum_retiro_acciones,
 sum(case when catalogo_id = 'RETIRO_ACCION' then 1 else 0 end) as count_retiro_acciones
+sum(case when catalogo_id = 'ENTREGA_GANANCIA' then -1*cantidad_movimiento else 0 end) as sum_entrega_ganancias,
+sum(case when catalogo_id = 'ENTREGA_GANANCIA' then 1 else 0 end) as count_entrega_ganancias
 
 
 
@@ -326,6 +327,8 @@ ossd.sum_pago_multas,
 ossd.count_pago_multas,
 ossd.sum_retiro_acciones,
 ossd.count_retiro_acciones,
+0 as ossd.sum_entrega_ganancias,
+0 as ossd.count_entrega_ganancias,
 
 gc.Color_grupo,
 1 as grupo_socio_id,
@@ -336,8 +339,5 @@ from old_socios_stats_dashboard  ossd
 left join grupos_colores gc
 on gc.grupo_id = ossd.grupo_id
 )
-
-
-
 
 
