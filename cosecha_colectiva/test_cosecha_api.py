@@ -5,6 +5,7 @@ import json
 import requests
 import time
 import logging
+from requests_toolbelt.utils import dump
 
 from cosecha_colectiva import config
 from cosecha_colectiva import miscelaneous as ms
@@ -106,6 +107,8 @@ class CAF_API_group_creation_tester():
 
             payload = json.dumps(user)
             time.sleep(0.1) 
+            print(config.url_dict['url_login_register'])
+            print(payload)
             response = requests.request("POST", config.url_dict['url_login_register'], headers=config.default_headers, data=payload)
 
             if not response:
@@ -481,12 +484,19 @@ class CAF_API_sessions_tester():
                         #idx_prestamo += 1
             
 
-                url_pagar_prestamo = config.url_dict['url_loans_pay'].format(id_grupo=id_grupo, id_sesion=id_sesion)
+                url_pagar_prestamo = config.url_dict['url_loans_pay'].format(id_grupo=id_grupo, id_sesion=id_sesion, id_socio=socio)
 
                 logging.debug('payload pagar presatmos %s', payload)
 
                 logging.info('url_pagar_prestamo %s payload %s', url_pagar_prestamo, payload)
                 response = requests.request("PATCH", url_pagar_prestamo, headers=admin_header, data=json.dumps(payload))
+
+
+                # Dump the full response data (returns bytes)
+                data = dump.dump_response(response)
+                # Decode and print
+                print(data.decode('utf-8'))
+
 
                 if not response:
                     logging.error('%s', response.text)

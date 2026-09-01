@@ -223,6 +223,8 @@ class CAF_DB_Monitor():
 
         if self.prestamos.shape[0] > 0:
 
+            print(self.prestamos)
+
             self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Interes_generado'] =\
             self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Interes_generado'] + self.prestamos.loc[self.prestamos['Estatus_prestamo'] == 0, 'interes_futuro']
             self.prestamos.loc[(self.prestamos['Estatus_prestamo'] == 0) & (self.prestamos['Status_socio'] == 1), 'Sesiones_restantes'] =\
@@ -445,9 +447,9 @@ class CAF_DB_Monitor():
             'Monto_pagado': 0,
             'Interes_generado': 0,
             'Interes_pagado': 0,
-            'Fecha_inicial': datetime.strftime(self.fecha_sesion, format='%Y-%m-%d'),
-            'Fecha_final':  datetime.strftime(self.fecha_sesion + relativedelta(months=num_sesiones), format='%Y-%m-%d'),
-            'Observaciones': 'Préstamo generado en script automático',
+            'Fecha_inicial': self.fecha_sesion+ relativedelta(days=1),
+            'Fecha_final':  None,
+            'Observaciones': 'Prestamo socio '+ str(socio) + ' grupo: ' + str(self.id_grupo),
             'Estatus_ampliacion': bool(ampliacion),
             'Num_sesiones': num_sesiones,
             'Sesiones_restantes': num_sesiones,

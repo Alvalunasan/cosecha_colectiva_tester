@@ -1,6 +1,8 @@
 
 dj_local_conf.json
 
+dj_local_conf*
+
 logs/*.log
 
 *.DS_Store

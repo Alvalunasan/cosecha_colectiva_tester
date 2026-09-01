@@ -173,7 +173,7 @@ bd_columnas_prestamo = ['Prestamo_id', 'Monto_prestamo', 'Monto_pagado', 'Intere
 
 columnas_prestamos = bd_columnas_prestamo + columnas_acuerdos_prestamo
 
-columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono']
+columnas_extras_prestamo = ['interes_futuro', 'Ultimo_interes_pagado', 'debe_interes', 'sobrante_abono', 'Ultimo_abono', 'Status_socio']
 
 columnas_prestamos_final = columnas_prestamos + columnas_extras_prestamo
 
