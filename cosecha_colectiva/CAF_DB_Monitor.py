@@ -1065,7 +1065,7 @@ class CAF_DB_Monitor():
                             activa=0)
 
 
-    def actualiza_todo_sesion(self, xls_name, session_num, type_xls='MAYRA', bd_update=False, unique_session_to_update=False):
+    def actualiza_todo_sesion(self, xls_name, session_num, type_xls='MAYRA', bd_update=False, unique_session_to_update=False, actualizar_interes_prestamos=True):
 
         if session_num == 1:
             self.fecha_sesion = self.fecha_grupo
@@ -1083,7 +1083,8 @@ class CAF_DB_Monitor():
         # self.acuerdos = pd.Series(qc.get_acuerdos_grupo(id_grupo))
         self.actualiza_sesiones(bd_update)
 
-        self.actualiza_interes_prestamos(self.sesiones[-1]['Sesion_id'])
+        if actualizar_interes_prestamos:
+            self.actualiza_interes_prestamos(self.sesiones[-1]['Sesion_id'])
 
         self.cambia_status_socio(dict_session['STATUS_SOCIOS'])
 

@@ -1,0 +1,48 @@
+
+select 
+
+p.prestamo_id,
+monto_prestamo,
+monto_abono_prestamo,
+monto_pagado,
+monto_abono_interes,
+monto_interes,
+interes_generado,
+interes_pagado,
+monto_abono_prestamo-monto_pagado as difs_montos_abono,
+monto_abono_interes-interes_pagado as difs_montos_interes,
+monto_interes-interes_generado as difs_interes_generado
+
+from prestamos p 
+
+
+inner join
+
+(
+select 
+prestamo_id, 
+sum(monto_abono_prestamo) as monto_abono_prestamo,
+sum(monto_abono_interes) as monto_abono_interes
+
+from transaccion_prestamos tp 
+
+group by prestamo_id 
+
+) tp2
+on tp2.prestamo_id = p.prestamo_id
+
+
+inner join
+
+(
+select 
+prestamo_id, 
+sum(monto_interes) as monto_interes
+
+from interes_prestamo ip 
+
+group by prestamo_id 
+
+) ip2
+on ip2.prestamo_id = p.prestamo_id
+
